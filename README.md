@@ -1,5 +1,10 @@
-# Vue 3 + TypeScript + Vite
+# Mezo Devezoper bounty 
+Anti liquidation tool for the mezo blockchain [bounty program](https://coda.io/d/Mezo-Community-Resources_d7Ee5YHYoEI/Devezoper-Bounties_su3zAeuq#_luxuowSF) and the [virtual grant metaverse]()
 
-This template should help get you started developing with Vue 3 and TypeScript in Vite. The template uses Vue 3 `<script setup>` SFCs, check out the [script setup docs](https://v3.vuejs.org/api/sfc-script-setup.html#sfc-script-setup) to learn more.
+## Vue 3 + TypeScript + Vite UI
 
-Learn more about the recommended Project Setup and IDE Support in the [Vue Docs TypeScript Guide](https://vuejs.org/guide/typescript/overview.html#project-setup).
+`npm run dev` to run on testnet
+`npm run build` to run on mainnet
+
+Lists all troves with 11
+0 -150% ICR and automagically redeems 10% of the less healthy ones
