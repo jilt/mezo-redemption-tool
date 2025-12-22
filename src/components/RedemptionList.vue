@@ -42,7 +42,6 @@
         <div>Chain ID: {{ publicClient.chain?.id }}</div>
         <div>BTC Price: ${{ btcPrice?.toLocaleString() || 'Loading...' }}</div>
         <div>Contracts: {{ contractsLoaded ? '✅' : '⏳' }}</div>
-        <div>Total Troves: {{ troves.data?.value?.length || 0 }}</div>
         <div>Redeemable (110-150%): {{ redeemableCount }}</div>
       </div>
     </div>
