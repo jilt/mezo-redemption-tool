@@ -51,6 +51,14 @@
       <div class="animate-spin rounded-full h-20 w-20 mx-auto mb-8"></div>
       <h2 class="text-3xl font-bold mb-4 text-white">Scanning All Troves...</h2>
       <p class="text-xl text-gray-400">Live data from {{ publicClient.chain?.name }} (all ICR levels)</p>
+
+      <div v-if="skippedTroves.length" class="mt-8 max-w-md mx-auto bg-gray-900/50 rounded-xl p-4 border border-white/5 backdrop-blur-sm">
+        <div class="text-xs font-mono text-gray-500 h-32 overflow-y-auto text-left space-y-1">
+          <div v-for="addr in skippedTroves" :key="addr" class="truncate">
+            Skipped: {{ addr }}
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Error -->
@@ -148,7 +156,7 @@ import { priceFeedAbi } from '../abis/PriceFeed'
 import { troveManagerAbi } from '../abis/TroveManager'
 import { hintHelpersAbi } from '../abis/HintHelpers'
 
-const troves = useTroves()
+const { troves, skippedTroves } = useTroves()
 const walletConnected = ref(false)
 const address = ref<Address | null>(null)
 const connecting = ref(false)
@@ -263,6 +271,13 @@ function getChainConfig(chainId: string) {
       rpcUrls: ['https://rpc-http.mezo.boar.network'],
       nativeCurrency: { name: 'BTC', symbol: 'BTC', decimals: 18 },
       blockExplorerUrls: ['https://explorer.mezo.org']
+    },
+    '0x7a69': {
+      chainId: '0x7A69',
+      chainName: 'Mezo Fork',
+      rpcUrls: ['http://127.0.0.1:8545'],
+      nativeCurrency: { name: 'BTC', symbol: 'BTC', decimals: 18 },
+      blockExplorerUrls: []
     },
   }
   return configs[chainId.toLowerCase()]

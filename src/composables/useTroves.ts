@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/vue-query'
+import { ref } from 'vue'
 import { publicClient, getNetworkContracts } from '../config/clients'
 import { type Address } from 'viem'
 import type { TroveInfo } from '../abis/TroveManager'
@@ -25,8 +26,11 @@ const sortedTrovesAbi = [
 ] as const
 
 export function useTroves() {
+  const skippedTroves = ref<string[]>([])
+
   const getTroves = async (): Promise<TroveInfo[]> => {
     try {
+      skippedTroves.value = []
       console.log('🔍 Fetching live troves from Mezo...')
 
       // ✅ DYNAMIC NETWORK CONTRACTS
@@ -129,6 +133,7 @@ export function useTroves() {
           }
         } catch (error) {
           console.warn(`⚠️ Skipped ${owner.slice(0, 10)}...`)
+          skippedTroves.value.push(owner)
           return null
         }
       })
@@ -178,10 +183,15 @@ export function useTroves() {
     ]
   }
 
-  return useQuery({ 
+  const troves = useQuery({ 
     queryKey: ['troves'], 
     queryFn: getTroves,
     refetchInterval: 30_000,
     staleTime: 10_000
   })
+
+  return {
+    troves,
+    skippedTroves
+  }
 }

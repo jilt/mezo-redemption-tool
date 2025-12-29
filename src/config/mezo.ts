@@ -16,6 +16,13 @@ export const MEZO_MAINNET = defineChain({
   blockExplorers: { default: { name: 'Mezo Explorer', url: 'https://explorer.mezo.org' } }
 })
 
+export const MEZO_LOCAL = defineChain({
+  id: 31337,
+  name: 'Mezo Fork',
+  nativeCurrency: { name: 'BTC', symbol: 'BTC', decimals: 18 },
+  rpcUrls: { default: { http: ['http://127.0.0.1:8545'] } },
+})
+
 // ✅ MAINNET ADDRESSES (verified)
 export const MAINNET_CONTRACTS = {
   TROVE_MANAGER: '0x94AfB503dBca74aC3E4929BACEeDfCe19B93c193' as `0x${string}`,
@@ -36,4 +43,5 @@ export const TESTNET_CONTRACTS = {
 export const getContracts = (chainId: number) => 
   chainId === 31611 ? TESTNET_CONTRACTS : MAINNET_CONTRACTS
 
-export const ACTIVE_CHAIN = import.meta.env.DEV ? MEZO_TESTNET : MEZO_MAINNET
+export const ACTIVE_CHAIN = import.meta.env.MODE === 'fork' ? MEZO_LOCAL 
+  : (import.meta.env.DEV ? MEZO_TESTNET : MEZO_MAINNET)
