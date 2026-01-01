@@ -4,7 +4,16 @@ Anti liquidation tool for the mezo blockchain [bounty program](https://coda.io/d
 ## Vue 3 + TypeScript + Vite UI
 
 `npm run dev` to run on testnet
+
 `npm run build` to run on mainnet
 
-Lists all troves with 11
-0 -150% ICR and automagically redeems 10% of the less healthy ones
+## Test on fork
+
+Fork is tested and working with anvil (foundry)
+
+Suggested rpc: [https://drpc.org/chainlist/mezo-mainnet-rpc](https://drpc.org/chainlist/mezo-mainnet-rpc)
+1) Run the node:
+`anvil --fork-url https://lb.drpc.live/mezo/YOUR_API_KEY --chain-id 31612 --host 127.0.0.1 --port 8545`
+2) Run the UI: `npm run dev`
+
+Lists all troves with 110 -150% ICR and automagically redeems 10% of the less healthy ones
