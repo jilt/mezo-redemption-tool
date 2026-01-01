@@ -1,6 +1,3 @@
-import { type Address } from 'viem'
-
-export const PRICE_FEED_ADDRESS = '0x86bCF0841622a5dAC14A313a15f96A95421b9366' as Address
 
 export const priceFeedAbi = [
   {

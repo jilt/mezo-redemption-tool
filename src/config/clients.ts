@@ -1,9 +1,20 @@
 import { createPublicClient, http, createWalletClient, custom } from 'viem'
 import { MEZO_TESTNET, MEZO_MAINNET, MEZO_LOCAL, getContracts } from './mezo'
 
+// Safe environment access for Node.js scripts (Hardhat)
+const getEnv = () => {
+  try {
+    // @ts-ignore
+    return import.meta.env || { MODE: 'fork', DEV: true }
+  } catch {
+    return { MODE: 'fork', DEV: true }
+  }
+}
+const env = getEnv()
+
 const getChain = () => {
-  if (import.meta.env.MODE === 'fork') return MEZO_LOCAL
-  if (import.meta.env.DEV) return MEZO_TESTNET
+  if (env.MODE === 'fork') return MEZO_LOCAL
+  if (env.DEV) return MEZO_TESTNET
   return MEZO_MAINNET
 }
 

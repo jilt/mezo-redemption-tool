@@ -38,17 +38,24 @@ export function useTroves() {
       const chainId = await publicClient.getChainId()
       console.log('🌐 Network:', publicClient.chain!.name, `(ID: ${chainId})`)
       console.log('📋 Contracts:', {
-        troveManager: `${contracts.TROVE_MANAGER.slice(0, 10)}...`,
-        sortedTroves: `${contracts.SORTED_TROVES.slice(0, 10)}...`,
-        priceFeed: `${contracts.PRICE_FEED.slice(0, 10)}...`
+        troveManager: `${contracts.TROVE_MANAGER}`,
+        sortedTroves: `${contracts.SORTED_TROVES}`,
+        priceFeed: `${contracts.PRICE_FEED}`,
+        hintHelpers: `${contracts.HINT_HELPERS}`
       })
 
       // 1. Get BTC price FIRST (critical for redemption)
-      const priceResult = await publicClient.readContract({
-        address: contracts.PRICE_FEED,
-        abi: priceFeedAbi,
-        functionName: 'fetchPrice'
-      }) as bigint
+      let priceResult: bigint
+      try {
+        priceResult = await publicClient.readContract({
+          address: contracts.PRICE_FEED,
+          abi: priceFeedAbi,
+          functionName: 'fetchPrice'
+        }) as bigint
+      } catch (error) {
+        console.warn('⚠️ Price fetch failed in useTroves, using fallback $100,000')
+        priceResult = parseEther('100000')
+      }
       console.log('💰 BTC Price:', Number(priceResult) / 1e18)
 
       // 2. Get first trove (lowest ICR)
@@ -144,16 +151,15 @@ export function useTroves() {
       console.log(`✅ Processed ${processedTroves.length}/${troves.length} troves`)
 
       // 6. Filter redemption targets
-      const redemptionTargets = processedTroves
-        .filter(trove => trove.redeemable)
+      const allTroves = processedTroves
         .sort((a, b) => a.icr - b.icr)
 
-      console.log(`🎯 ${redemptionTargets.length} redemption targets (110-150% ICR)`)
-      if (redemptionTargets.length > 0) {
-        console.table(redemptionTargets.slice(0, 5))
+      console.log(`🎯 ${allTroves.length} troves found (showing all)`)
+      if (allTroves.length > 0) {
+        console.table(allTroves.slice(0, 5))
       }
 
-      return redemptionTargets
+      return allTroves
 
     } catch (error) {
       console.error('❌ Trove fetch failed:', error)

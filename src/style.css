@@ -67,6 +67,10 @@ button:focus-visible {
   text-align: center;
 }
 
+.menu > div, .menu > button {
+  margin: 1em;
+}
+
 @media (prefers-color-scheme: light) {
   :root {
     color: #213547;
@@ -78,4 +82,34 @@ button:focus-visible {
   button {
     background-color: #f9f9f9;
   }
+}
+
+.modal {
+  background-color: #242424;
+  margin: -10% 30% auto;
+}
+.modal-header {
+  transform: translateX(10px);
+  transform: translateY(-10px);
+
+}
+
+.modal-content {
+  padding: 1em 3em;
+}
+
+.modal-body {
+  margin-top: 1.5em;
+}
+
+.modal-body > div {
+  margin-bottom: 1em;
+}
+
+.modal-body > div > input {
+  width: 90%;
+}
+
+.trovedata, .modal-footer {
+  padding: 1em;
 }
