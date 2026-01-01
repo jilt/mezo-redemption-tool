@@ -14,6 +14,6 @@ Fork is tested and working with anvil (foundry)
 Suggested rpc: [https://drpc.org/chainlist/mezo-mainnet-rpc](https://drpc.org/chainlist/mezo-mainnet-rpc)
 1) Run the node:
 `anvil --fork-url https://lb.drpc.live/mezo/YOUR_API_KEY --chain-id 31612 --host 127.0.0.1 --port 8545`
-2) Run the UI: `npm run dev`
+2) Run the UI: `npm run dev:fork`
 
 Lists all troves with 110 -150% ICR and automagically redeems 10% of the less healthy ones
