@@ -20,9 +20,9 @@ const HINT_HELPERS  = '0xD267b3bE2514375A075fd03C3D9CBa6b95317DC3';
 const BORROWER_OPS  = '0x44b1bac67dDA612a41a58AAf779143B181dEe031';
 const SORTED_TROVES = '0x8C5DB4C62BF29c1C4564390d10c20a47E0b2749f';
 
-// Define the local fork chain to match hardhat.config.ts (Chain ID 31612)
+// Define the local fork chain to match hardhat.config.ts (Chain ID 31337)
 const localFork = defineChain({
-  id: 31612,
+  id: 31337,
   name: 'Mezo Fork',
   nativeCurrency: { decimals: 18, name: 'Bitcoin', symbol: 'BTC' },
   rpcUrls: {

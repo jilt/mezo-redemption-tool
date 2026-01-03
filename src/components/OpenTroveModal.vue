@@ -88,9 +88,9 @@ async function openRiskyTrove() {
       abi: borrowerOperationsAbi,
       functionName: 'openTrove',
       account: props.address,
-      value: parseEther(newTroveCol.value),
+      value: parseEther(newTroveCol.value.toString()),
       args: [
-        parseEther(newTroveDebt.value),
+        parseEther(newTroveDebt.value.toString()),
         '0x0000000000000000000000000000000000000000',
         '0x0000000000000000000000000000000000000000'
       ]

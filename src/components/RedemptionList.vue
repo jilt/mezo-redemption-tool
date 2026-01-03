@@ -364,15 +364,15 @@ async function toggleWallet() {
 
 function getChainConfig(chainId: string) {
   const configs: Record<string, any> = {
-    //'31612': {
-    //  chainId: '31612',
-    //  chainName: 'Mezo Mainnet',
-    //  rpcUrls: ['https://rpc-http.mezo.boar.network'],
-    //  nativeCurrency: { name: 'BTC', symbol: 'BTC', decimals: 18 },
-    //  blockExplorerUrls: ['https://explorer.mezo.org']
-    //},
     '31612': {
       chainId: '31612',
+      chainName: 'Mezo Mainnet',
+      rpcUrls: ['https://rpc-http.mezo.boar.network'],
+      nativeCurrency: { name: 'BTC', symbol: 'BTC', decimals: 18 },
+      blockExplorerUrls: ['https://explorer.mezo.org']
+    },
+    '31337': {
+      chainId: '31337',
       chainName: 'Mezo Fork',
       rpcUrls: ['http://127.0.0.1:8545'],
       nativeCurrency: { name: 'BTC', symbol: 'BTC', decimals: 18 },

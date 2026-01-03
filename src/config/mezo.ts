@@ -17,7 +17,7 @@ export const MEZO_MAINNET = defineChain({
 })
 
 export const MEZO_LOCAL = defineChain({
-  id: 31612,
+  id: 31337,
   name: 'Mezo Fork',
   nativeCurrency: { name: 'BTC', symbol: 'BTC', decimals: 18 },
   rpcUrls: { default: { http: ['http://127.0.0.1:8545'] } },

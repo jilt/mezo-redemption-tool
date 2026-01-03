@@ -13,7 +13,7 @@ Fork is tested and working with anvil (foundry)
 
 Suggested rpc: [https://drpc.org/chainlist/mezo-mainnet-rpc](https://drpc.org/chainlist/mezo-mainnet-rpc)
 1) Run the node:
-`anvil --fork-url https://lb.drpc.live/mezo/YOUR_API_KEY --chain-id 31612 --host 127.0.0.1 --port 8545`
+`anvil --fork-url https://lb.drpc.live/mezo/YOUR_API_KEY --chain-id 31337 --host 127.0.0.1 --port 8545`
 2) Run the UI: `npm run dev:fork`
 
 
