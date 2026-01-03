@@ -36,9 +36,10 @@
           <span v-if="connecting" class="animate-spin rounded-full w-6 h-6 border-t-transparent"></span>
           {{ walletConnected ? `${address?.slice(0,8)}...${address?.slice(-6)}` : 'Connect Wallet' }}
         </button>
+        
         <!-- Targets Counter -->
         <div class="px-6 py-3 bg-emerald-500/20 backdrop-blur-sm text-emerald-300 text-lg font-bold rounded-2xl">
-          {{ troves.data?.value?.length || 0 }}  redeemable troves
+          {{ troves.data?.value?.length || 0 }} troves
           <span v-if="redeemableCount" class="ml-2 text-sm bg-orange-500/30 px-2 py-1 rounded-full">
             {{ redeemableCount }} redeemable
           </span>
@@ -55,13 +56,13 @@
       @success="troves.refetch()" 
     />
 
-    <!-- Debug Info (remove in production) -->
+    <!-- Debug Info -->
     <div v-if="showDebug" class="bg-gray-900/50 border border-gray-700/50 rounded-2xl p-4 mb-8 backdrop-blur-sm">
       <div class="text-sm text-gray-400 font-mono">
-        <div>Chain ID: {{ publicClient.chain?.id }}</div>
+        <div>Chain ID: {{ chainId }}</div>
         <div>
           BTC Price: ${{ btcPrice?.toLocaleString() || 'Loading...' }}
-          <span v-if="isFallbackPrice" class="text-red-400 ml-2 font-bold">(fallback)</span>
+          <span v-if="isFallbackPrice" class="text-orange-400 ml-2 font-bold">(fallback - fork workaround)</span>
         </div>
         <div>Contracts: {{ contractsLoaded ? '✅' : '⏳' }}</div>
         <div>Redeemable (110-150%): {{ redeemableCount }}</div>
@@ -70,7 +71,6 @@
 
     <!-- Loading -->
     <div v-if="troves.isPending" class="text-center py-24">
-      <div class="animate-spin rounded-full h-20 w-20 mx-auto mb-8"></div>
       <h2 class="text-3xl font-bold mb-4 text-white">Scanning All Troves...</h2>
       <p class="text-xl text-gray-400">Live data from {{ publicClient.chain?.name }} (all ICR levels)</p>
 
@@ -107,8 +107,8 @@
       </div>
     </div>
 
-    <!-- ✅ ENHANCED TROVES TABLE - FULLY REACTIVE -->
-    <div v-else class="bg-white/5 overflow-hidden shadow-2xl">
+    <!-- Troves Table -->
+    <div v-else class="bg-white/5 overflow-hidden shadow-2xl rounded-3xl">
       <table class="w-full">
         <thead class="bg-gradient-to-r from-gray-900/50 to-gray-800/50 backdrop-blur-sm">
           <tr>
@@ -125,7 +125,7 @@
             :key="trove.owner" 
             class="group hover:bg-white/10 transition-all border-b border-white/5"
           >
-            <td class="p-6 font-mono text-lg group-hover:text-white">
+            <td class="p-6 font-mono text-lg text-gray-400 group-hover:text-white">
               {{ trove.owner.slice(0,10) }}...{{ trove.owner.slice(-8) }}
             </td>
             <td class="p-6">
@@ -194,7 +194,7 @@
     </div>
 
     <!-- Info Section -->
-    <div class="mt-16 bg-gray-900/50 p-8 backdrop-blur-sm">
+    <div class="mt-16 bg-gray-900/50 p-8 rounded-3xl backdrop-blur-sm">
       <h3 class="text-2xl font-bold text-white mb-6">Liquidation vs Redemption</h3>
       <p class="text-gray-400 text-sm mb-8">You only redeem when MUSD is trading below $1 on the market:<br/>
       Example: MUSD trades at $0.95 on an exchange.<br/>
@@ -206,7 +206,7 @@
       Debt goes down by the redeemed MUSD amount.<br/>
       Collateral goes down by the same dollar value.<br/>
       ICR increases, so your position becomes safer.<br/>
-      If a redemption completely clears your debt, you keep the surplus BTC and can claim it. This is “neutral or even positive” for the borrower; it’s not a liquidation.
+      If a redemption completely clears your debt, you keep the surplus BTC and can claim it. This is "neutral or even positive" for the borrower; it's not a liquidation.
       </p>
       <br/><br/>
       <div class="overflow-x-auto">
@@ -258,33 +258,22 @@ const redeeming = ref(false)
 const btcPrice = ref(0)
 const isFallbackPrice = ref(false)
 const contracts = ref<any>(null)
-const showDebug = ref(true) // Set to false in production
-
-// Modal & New Trove State
+const showDebug = ref(true)
 const showModal = ref(false)
 const customRedemptionAmounts = ref<Record<string, string>>({})
+const chainId = ref<number>(0)
 
-// ✅ REACTIVE NETWORK STATUS
-const networkStatus = computed(() => {
-  if (!publicClient.chain) return 'Disconnected'
-  const chainId = publicClient.chain.id.toString(16).toUpperCase()
-  return `Chain ${chainId}`
-})
-
-// ✅ REACTIVE REDEEMABLE COUNT
+// Reactive computed properties
 const redeemableCount = computed(() => {
   return troves.data?.value?.filter((trove: TroveInfo) => 
     trove.icr >= 110 && trove.icr < 150
   ).length || 0
 })
 
-// ✅ REACTIVE CONTRACTS STATUS
 const contractsLoaded = computed(() => !!contracts.value)
-
-// ✅ REDEEMABLE CHECK (110-150% ICR only)
 const isRedeemable = (trove: TroveInfo) => trove.icr >= 110 && trove.icr < 150
 
-// Formatters ✅ FULLY REACTIVE
+// Formatters
 const formatDebt = (debt: bigint): string => {
   return (Number(debt) / 1e18).toLocaleString('en-US', { maximumFractionDigits: 0 })
 }
@@ -293,7 +282,7 @@ const formatCollateral = (collateral: bigint, price: number): string => {
   return (Number(collateral) * price / 1e18).toLocaleString('en-US', { maximumFractionDigits: 0 })
 }
 
-// ✅ GET NETWORK CONTRACTS (cached + reactive)
+// Get network contracts
 async function getContracts() {
   if (!contracts.value) {
     contracts.value = await getNetworkContracts()
@@ -302,7 +291,7 @@ async function getContracts() {
   return contracts.value
 }
 
-// ✅ NETWORK-AWARE WALLET CONNECTION
+// Wallet connection
 async function toggleWallet() {
   if (walletConnected.value) {
     window.ethereum?.removeAllListeners()
@@ -322,18 +311,17 @@ async function toggleWallet() {
     address.value = accounts[0] as Address
     walletConnected.value = true
 
-    // ✅ PROPER 0x CHAIN ID
-    const chainId = `0x${publicClient.chain!.id.toString(16)}`
-    console.log('🔗 Switching to chain:', chainId)
+    const chainIdHex = `0x${publicClient.chain!.id.toString(16)}`
+    console.log('🔗 Switching to chain:', chainIdHex)
     
     try {
       await (window.ethereum as any).request({
         method: 'wallet_switchEthereumChain',
-        params: [{ chainId }]
+        params: [{ chainId: chainIdHex }]
       })
     } catch (switchError: any) {
       if (switchError.code === 4902) {
-        const chainConfig = getChainConfig(chainId)
+        const chainConfig = getChainConfig(chainIdHex)
         if (chainConfig) {
           await (window.ethereum as any).request({
             method: 'wallet_addEthereumChain',
@@ -362,32 +350,29 @@ async function toggleWallet() {
   }
 }
 
-function getChainConfig(chainId: string) {
+function getChainConfig(chainIdHex: string) {
   const configs: Record<string, any> = {
-    '31612': {
-      chainId: '31612',
+    '0x7b8c': {
+      chainId: '0x7b8c',
       chainName: 'Mezo Mainnet',
       rpcUrls: ['https://rpc-http.mezo.boar.network'],
       nativeCurrency: { name: 'BTC', symbol: 'BTC', decimals: 18 },
       blockExplorerUrls: ['https://explorer.mezo.org']
     },
-    '31337': {
-      chainId: '31337',
+    '0x7a69': {
+      chainId: '0x7a69',
       chainName: 'Mezo Fork',
       rpcUrls: ['http://127.0.0.1:8545'],
       nativeCurrency: { name: 'BTC', symbol: 'BTC', decimals: 18 },
       blockExplorerUrls: []
     },
   }
-  return configs[chainId.toLowerCase()]
+  return configs[chainIdHex.toLowerCase()]
 }
 
-// ✅ AUTOMAGICAL REDEMPTION (Targets lowest ICR)
 async function redeemRiskiest() {
   if (!troves.data.value?.length) return
   
-  // 1. Find lowest ICR < 150%
-  // Data is already sorted by ICR ascending in useTroves
   const riskiest = troves.data.value[0]
   
   if (!riskiest || riskiest.icr >= 150) {
@@ -395,11 +380,9 @@ async function redeemRiskiest() {
     return
   }
 
-  // 2. Trigger redemption (Protocol will target this trove anyway)
   await redeemTrove(riskiest)
 }
 
-// ✅ PRODUCTION REDEMPTION - FULLY REACTIVE
 async function redeemTrove(trove: TroveInfo) {
   if (!walletConnected.value || !address.value || !isRedeemable(trove)) {
     alert('Only troves with 110-150% ICR are redeemable')
@@ -413,29 +396,40 @@ async function redeemTrove(trove: TroveInfo) {
     
     const networkContracts = await getContracts()
     
-    // 1. Get BTC price (UPDATES UI!)
+    // 🔧 CONDITIONAL PRICE FETCH
     let price: bigint
-    try {
-      price = await publicClient.readContract({
-        address: networkContracts.PRICE_FEED,
-        abi: priceFeedAbi,
-        functionName: 'fetchPrice'
-      }) as bigint
-      isFallbackPrice.value = false
-    } catch (e) {
-      console.warn('⚠️ Price fetch failed. Using fallback $100,000')
+    
+    if (chainId.value === 31337) {
+      // Fork: use stub
+      console.log('🔧 Using stub price for fork (31337)')
       price = parseEther('100000')
       isFallbackPrice.value = true
+    } else {
+      // Mainnet/Testnet: fetch real price
+      try {
+        price = await publicClient.readContract({
+          address: networkContracts.PRICE_FEED,
+          abi: priceFeedAbi,
+          functionName: 'fetchPrice'
+        }) as bigint
+        isFallbackPrice.value = false
+        console.log('✅ Real price fetched:', Number(price) / 1e18)
+      } catch (e) {
+        console.warn('⚠️ Price fetch failed. Using fallback $100,000')
+        price = parseEther('100000')
+        isFallbackPrice.value = true
+      }
     }
-    btcPrice.value = Number(price) / 1e18  // ✅ UI UPDATES!
+    
+    btcPrice.value = Number(price) / 1e18
 
-    // 2. Calculate redemption amount
+    // Calculate redemption amount
     const customAmount = customRedemptionAmounts.value[trove.owner]
     const redemptionAmount = customAmount && Number(customAmount) > 0
       ? parseEther(customAmount)
-      : (trove.debt / 10n) // Default to 10% if no input
+      : (trove.debt / 10n)
 
-    // 3. Get redemption hints
+    // Get redemption hints
     const hints = await publicClient.readContract({
       address: networkContracts.HINT_HELPERS,
       abi: hintHelpersAbi,
@@ -443,7 +437,7 @@ async function redeemTrove(trove: TroveInfo) {
       args: [redemptionAmount, price, 10n]
     }) as [Address, bigint, bigint]
 
-    // 4. Execute redemption
+    // Execute redemption
     const walletClient = getWalletClient()
     const hash = await walletClient.writeContract({
       address: networkContracts.TROVE_MANAGER,
@@ -461,7 +455,6 @@ async function redeemTrove(trove: TroveInfo) {
       ]
     }) as `0x${string}`
 
-    // 5. Wait for confirmation + REFETCH
     await publicClient.waitForTransactionReceipt({ hash })
     console.log('✅ Redemption successful!', `https://explorer.mezo.org/tx/${hash}`)
     
@@ -471,7 +464,7 @@ async function redeemTrove(trove: TroveInfo) {
       `ICR: ${trove.icr.toFixed(2)}%\n` +
       `Tx: https://explorer.mezo.org/tx/${hash}`
     )
-    await troves.refetch()  // ✅ FULL UI REFRESH!
+    await troves.refetch()
     
   } catch (error) {
     console.error('Redemption failed:', error)
@@ -481,32 +474,46 @@ async function redeemTrove(trove: TroveInfo) {
   }
 }
 
-// ✅ FULLY REACTIVE INITIALIZATION
+// ✅ CONDITIONAL INITIALIZATION
 onMounted(async () => {
-  // 1. Load contracts (UI updates)
+  // 1. Get chainId FIRST
+  chainId.value = await publicClient.getChainId()
+  console.log('🌐 Connected to chainId:', chainId.value)
+  
+  // 2. Load contracts
   try {
     await getContracts()
   } catch (error) {
     console.error('Failed to load network contracts:', error)
   }
 
-  // 2. Auto-connect wallet
+  // 3. Auto-connect wallet
   if ((window.ethereum as any)?.selectedAddress) {
     await toggleWallet()
   }
   
-  // 3. Fetch initial price (UI updates)
+  // 4. 🔧 CONDITIONAL PRICE FETCH
   try {
     const networkContracts = await getContracts()
-    const price = await publicClient.readContract({
-      address: networkContracts.PRICE_FEED,
-      abi: priceFeedAbi,
-      functionName: 'fetchPrice'
-    }) as bigint
-    btcPrice.value = Number(price) / 1e18  // ✅ COLLATERAL COLUMN UPDATES!
-    isFallbackPrice.value = false
+    
+    if (chainId.value === 31337) {
+      // Fork: skip fetch, use stub
+      console.log('🔧 Local fork detected - using stub price $100,000')
+      btcPrice.value = 100000
+      isFallbackPrice.value = true
+    } else {
+      // Mainnet/Testnet: fetch real price
+      const price = await publicClient.readContract({
+        address: networkContracts.PRICE_FEED,
+        abi: priceFeedAbi,
+        functionName: 'fetchPrice'
+      }) as bigint
+      btcPrice.value = Number(price) / 1e18
+      isFallbackPrice.value = false
+      console.log('✅ Real BTC price fetched:', btcPrice.value)
+    }
   } catch (error) {
-    console.warn('Initial price fetch failed:', error)
+    console.warn('⚠️ Initial price fetch failed, using fallback')
     btcPrice.value = 100000
     isFallbackPrice.value = true
   }

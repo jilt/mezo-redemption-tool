@@ -12,5 +12,32 @@ export const sortedTrovesAbi = [
     ],
     "stateMutability": "view",
     "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getSize",
+    "outputs": [
+      {"internalType": "uint256", "name": "", "type": "uint256"}
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getFirst",
+    "outputs": [
+      {"internalType": "address", "name": "", "type": "address"}
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getLast",
+    "outputs": [
+      {"internalType": "address", "name": "", "type": "address"}
+    ],
+    "stateMutability": "view",
+    "type": "function"
   }
 ] as const
