@@ -19,13 +19,13 @@ Suggested rpc: [https://drpc.org/chainlist/mezo-mainnet-rpc](https://drpc.org/ch
 
 
 ## What you can do
-The UI lists all troves with 110 -150% ICR and automagically redeems 10% of the less healthy ones when you click the redeem button.
+The UI lists all troves starting with the lower ICR risk,and automagically redeems 10% of the less healthy ones when you click the redeem button.
 
-To test you can create a trove using our "open trove" button, it will calculate and let you review the ICR risk before you send the transaction then click on "redeem riskiest trove" button on testnet or in a fork.
+To test you can create a trove using our "open trove" button, it will calculate and let you review the ICR risk before you send the transaction then click on "redeem riskiest" button on testnet or in a fork.
 
 I have kept the open trove button for testnet or mainned to be able to further implement this project.
 
-The fork has serious storage deserialization problems, typical of the anvil environment, so i had to stub some contract call outputs, including the pricefeed (that is why there's a fallback notice), those fallbacks are conditional to the fork's chainID.
+The fork has serious storage deserialization problems, typical of the anvil environment, so i had to stub some contract call outputs, those fallbacks are conditional to the fork's chainID.
 
 
 1. Local Fork (31337)
@@ -38,5 +38,7 @@ The fork has serious storage deserialization problems, typical of the anvil envi
 → Uses real calls ✅
 
 Vue Component auto-detects network and applies workarounds only where needed. Production-ready!
+
+I also had to mockup some crucial parts of PriceFeed, so when you launch the fork you need to deploy the MockOracle contract at the right address for it to be called by other contracts, you can reach out to me on the [mezo discord](https://discord.gg/mezo) if you need help with that.
 
 You can also test using the script (in the fork): `npx tsx .\verify-redemption.ts `

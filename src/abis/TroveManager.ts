@@ -1,17 +1,16 @@
 import { type Address } from 'viem'
 import { getNetworkContracts } from '../config/clients'
 
-// ✅ MINIMAL ABI - Production optimized
+// ✅ YOUR ORIGINAL ABI + getNominalICR (minimal change)
 export const troveManagerAbi = [
   {
     "inputs": [
-      {"internalType": "uint256", "name": "_MUSDamount", "type": "uint256"},
+      {"internalType": "uint256", "name": "amount", "type": "uint256"},
       {"internalType": "address", "name": "firstRedemptionHint", "type": "address"},
       {"internalType": "address", "name": "upperPartialRedemptionHint", "type": "address"},
       {"internalType": "address", "name": "lowerPartialRedemptionHint", "type": "address"},
       {"internalType": "uint256", "name": "partialRedemptionHintNICR", "type": "uint256"},
-      {"internalType": "uint256", "name": "_maxIterations", "type": "uint256"},
-      {"internalType": "uint256", "name": "_maxFeePercentage", "type": "uint256"}
+      {"internalType": "uint256", "name": "maxIterations", "type": "uint256"}
     ],
     "name": "redeemCollateral",
     "outputs": [],
@@ -19,7 +18,10 @@ export const troveManagerAbi = [
     "type": "function"
   },
   {
-    "inputs": [{"internalType": "address", "name": "_borrower", "type": "address"}],
+    "inputs": [
+      {"internalType": "address", "name": "_borrower", "type": "address"},
+      {"internalType": "uint256", "name": "_price", "type": "uint256"}
+    ],
     "name": "getCurrentICR",
     "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
     "stateMutability": "view",
@@ -54,6 +56,42 @@ export const troveManagerAbi = [
   {
     "inputs": [],
     "name": "getTroveOwnersCount",
+    "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [{"internalType": "uint256", "name": "price", "type": "uint256"}],
+    "name": "getTCR",
+    "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  // ✅ NEW: Add this for hints calculation
+  {
+    "inputs": [
+      {"internalType": "address", "name": "_borrower", "type": "address"}
+    ],
+    "name": "getNominalICR",
+    "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  // ✅ NEW: Useful for trove data
+  {
+    "inputs": [
+      {"internalType": "address", "name": "_borrower", "type": "address"}
+    ],
+    "name": "getTroveColl",
+    "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {"internalType": "address", "name": "_borrower", "type": "address"}
+    ],
+    "name": "getTroveDebt",
     "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
     "stateMutability": "view",
     "type": "function"

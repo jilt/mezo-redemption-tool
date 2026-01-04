@@ -5,33 +5,27 @@ import { type Address } from 'viem'
 import type { TroveInfo } from '../abis/TroveManager'
 import { troveManagerAbi } from '../abis/TroveManager'
 import { priceFeedAbi } from '../abis/PriceFeed'
-import { parseEther } from 'viem'
+import { sortedTrovesAbi } from '../abis/SortedTroves'
+import { parseEther, formatEther } from 'viem'
 
-// ✅ OFFICIAL SortedTroves ABI (minimal)
-const sortedTrovesAbi = [
-  {
-    inputs: [],
-    name: "getFirst",
-    outputs: [{ internalType: "address", name: "", type: "address" }],
-    stateMutability: "view",
-    type: "function"
-  },
-  {
-    inputs: [{ internalType: "address", name: "_id", type: "address" }],
-    name: "getNext",
-    outputs: [{ internalType: "address", name: "", type: "address" }],
-    stateMutability: "view",
-    type: "function"
-  }
-] as const
+
+// Extended type for UI display
+interface TroveInfoUI extends TroveInfo {
+  closed?: boolean
+}
+
 
 export function useTroves() {
-  const skippedTroves = ref<string[]>([])
+  const skippedTroves = ref<TroveInfoUI[]>([])
+  const liveTroves = ref<TroveInfoUI[]>([])
 
-  const getTroves = async (): Promise<TroveInfo[]> => {
+
+  const getTroves = async (): Promise<TroveInfoUI[]> => {
     try {
       skippedTroves.value = []
+      liveTroves.value = []
       console.log('🔍 Fetching live troves from Mezo...')
+
 
       // ✅ DYNAMIC NETWORK CONTRACTS
       const contracts = await getNetworkContracts()
@@ -44,7 +38,8 @@ export function useTroves() {
         hintHelpers: `${contracts.HINT_HELPERS}`
       })
 
-      // 1. Get BTC price FIRST (critical for redemption)
+
+      // 1. Get BTC price FIRST (critical for ICR calculation)
       let priceResult: bigint
       try {
         priceResult = await publicClient.readContract({
@@ -52,41 +47,45 @@ export function useTroves() {
           abi: priceFeedAbi,
           functionName: 'fetchPrice'
         }) as bigint
+        
+        console.log('💰 Raw BTC Price:', priceResult.toString())
+        console.log('💰 BTC Price (formatted):', formatEther(priceResult), 'USD')
       } catch (error) {
         console.warn('⚠️ Price fetch failed in useTroves, using fallback $100,000')
         priceResult = parseEther('100000')
       }
-      console.log('💰 BTC Price:', Number(priceResult) / 1e18)
 
-      // 2. Get first trove (lowest ICR)
+
+      // 2. Get LAST trove (lowest ICR / Riskiest) - Start from tail
       let currentId: Address | null = null
       try {
         currentId = await publicClient.readContract({
           address: contracts.SORTED_TROVES,
           abi: sortedTrovesAbi,
-          functionName: 'getFirst'
+          functionName: 'getLast'
         }) as Address
         
-        console.log('📋 First trove (lowest ICR):', currentId)
+        console.log('📋 Starting from tail (Riskiest/Lowest ICR):', currentId)
         if (currentId === '0x0000000000000000000000000000000000000000') {
           console.log('📭 Empty trove list - no redemption targets')
           return []
         }
       } catch (error) {
-        console.warn('❌ getFirst failed - no troves or wrong contract:', error)
+        console.warn('❌ getLast failed - no troves or wrong contract:', error)
         return testTroves()
       }
 
-      // 3. Traverse → Max 50 troves (gas efficient)
+
+      // 3. Traverse Backwards (Risky -> Safe) → Max 2000 troves
       const troves: Address[] = [currentId]
       let count = 1
       
-      while (count < 50) {
+      while (count < 2000) {
         try {
           const nextId = await publicClient.readContract({
             address: contracts.SORTED_TROVES,
             abi: sortedTrovesAbi,
-            functionName: 'getNext',
+            functionName: 'getPrev',
             args: [currentId]
           }) as Address
           
@@ -101,65 +100,178 @@ export function useTroves() {
         }
       }
 
-      console.log(`📊 Found ${troves.length} troves (lowest ICR first)`)
+      console.log(`🔗 Traversal complete:`)
+      console.log(`  - Collected ${troves.length} trove addresses`)
+      console.log(`  - Expected: 91 troves`)
+      console.log(`  - First 5 addresses:`, troves.slice(0, 5))
 
       if (troves.length === 0) return []
 
-      // ✅ SEQUENTIAL FETCH - No Multicall3 needed
-      console.log('📡 Fetching trove data (sequential, max 20)...')
-      const processedTrovesPromises: Promise<TroveInfo | null>[] = troves.slice(0, 20).map(async (owner) => {
+
+      // ✅ PARALLEL FETCH WITH STATUS CHECK
+      console.log('📡 Fetching trove data (parallel, max 200)...')
+      const processedTrovesPromises: Promise<TroveInfoUI | null>[] = troves.slice(0, 200).map(async (owner) => {
         try {
-          // ICR
-          const icrResult = await publicClient.readContract({
+          // 🔍 CHECK STATUS FIRST
+          const status = await publicClient.readContract({
             address: contracts.TROVE_MANAGER,
             abi: troveManagerAbi,
-            functionName: 'getCurrentICR',
+            functionName: 'getTroveStatus',
             args: [owner]
           }) as bigint
 
-          // Debt/Collateral
+
+          // ✅ Get debt and collateral - Mezo returns [coll, debt, pendingCollReward, pendingDebtReward]
           const debtCollResult = await publicClient.readContract({
             address: contracts.TROVE_MANAGER,
             abi: troveManagerAbi,
             functionName: 'getEntireDebtAndColl',
             args: [owner]
-          }) as readonly [bigint, bigint, bigint, bigint]
+          })
 
-          const icr = Number(icrResult) / 100
-          const [debt, collateral] = debtCollResult.slice(0, 2) as [bigint, bigint]
 
-          if (isNaN(icr) || icr < 0 || icr > 1000) return null
+          // ✅ MEZO ORDER: [collateral, debt, pendingCollReward, pendingDebtReward]
+          const [collateral, debt] = debtCollResult.slice(0, 2) as [bigint, bigint]
 
-          return {
+
+          // Skip closed troves (status != 1) but collect their data for display
+          if (status !== 1n) {
+            console.log(`⏭️ Closed trove ${owner.slice(0, 8)} (status: ${status})`)
+            
+            const skippedTroveInfo: TroveInfoUI = {
+              owner,
+              icr: 0,
+              debt,
+              collateral,
+              atRisk: false,
+              redeemable: false,
+              closed: true
+            }
+            
+            skippedTroves.value.push(skippedTroveInfo)
+            return null
+          }
+
+
+          // 🐛 DEBUG: Log first few troves to verify correct parsing
+          if (liveTroves.value.length < 3) {
+            console.log(`🔍 Trove ${owner.slice(0, 8)}:`, {
+              collateralRaw: collateral.toString(),
+              debtRaw: debt.toString(),
+              collateral: formatEther(collateral) + ' BTC',
+              debt: formatEther(debt) + ' MUSD'
+            })
+          }
+
+
+          // ✅ Convert with proper decimals (both are 18 decimals on Mezo)
+          const collNum = Number(formatEther(collateral))    // BTC (18 decimals)
+          const debtNum = Number(formatEther(debt))          // MUSD (18 decimals)
+          const priceNum = Number(formatEther(priceResult))  // Price (18 decimals)
+
+
+          // 🐛 DEBUG: Log conversion values
+          if (liveTroves.value.length < 3) {
+            console.log(`🔍 ICR Debug for ${owner.slice(0, 8)}:`, {
+              collNum,
+              debtNum,
+              priceNum,
+              collValue: collNum * priceNum,
+              calculation: `(${collNum} * ${priceNum} / ${debtNum}) * 100`
+            })
+          }
+
+
+          // Calculate ICR
+          let icr = 0
+          if (debtNum > 0) {
+            // ICR = (Collateral Value / Debt) * 100
+            icr = (collNum * priceNum / debtNum) * 100
+          } else if (collNum > 0) {
+            icr = 999999 // Infinite collateralization
+          }
+
+
+          // 🐛 DEBUG: Log final ICR
+          if (liveTroves.value.length < 3) {
+            console.log(`🔍 Final ICR for ${owner.slice(0, 8)}: ${icr}%`)
+          }
+
+
+          const atRisk = icr < 110
+          const redeemable = icr >= 110 && icr < 150
+
+
+          // ✅ Fixed validation (allow high ICRs, only reject invalid)
+          if (isNaN(icr) || icr < 0) {
+            console.warn(`⚠️ Invalid ICR for ${owner}: ${icr}`)
+            return null
+          }
+
+
+          const troveInfo: TroveInfoUI = {
             owner,
             icr,
             debt,
             collateral,
-            atRisk: icr < 110,
-            redeemable: icr >= 110 && icr < 150
+            atRisk,
+            redeemable,
+            closed: false
           }
+          liveTroves.value.push(troveInfo)
+          liveTroves.value.sort((a, b) => a.icr - b.icr) // ✅ Keep riskiest at top
+          return troveInfo
         } catch (error) {
-          console.warn(`⚠️ Skipped ${owner.slice(0, 10)}...`)
-          skippedTroves.value.push(owner)
+          console.error(`❌ Failed to fetch trove ${owner.slice(0,8)}:`, error instanceof Error ? error.message : error)
+          console.error(`   Full error:`, error)
           return null
         }
       })
 
+
       const processedTroves = (await Promise.all(processedTrovesPromises))
-        .filter((trove): trove is TroveInfo => trove !== null)
+        .filter((trove): trove is TroveInfoUI => trove !== null)
 
-      console.log(`✅ Processed ${processedTroves.length}/${troves.length} troves`)
 
-      // 6. Filter redemption targets
-      const allTroves = processedTroves
-        .sort((a, b) => a.icr - b.icr)
+      // ✅ MOVED FILTERING STATS HERE (after Promise.all completes)
+      console.log(`📊 Filtering results:`)
+      console.log(`  - Troves collected: ${troves.length}`)
+      console.log(`  - Active troves: ${processedTroves.length}`)
+      console.log(`  - Closed/skipped: ${skippedTroves.value.length}`)
+      console.log(`  - Failed to process: ${troves.length - processedTroves.length - skippedTroves.value.length}`)
 
-      console.log(`🎯 ${allTroves.length} troves found (showing all)`)
+      console.log(`✅ Processed ${processedTroves.length}/${troves.length} active troves`)
+      console.log(`⏭️ Skipped ${skippedTroves.value.length} closed troves`)
+
+
+      // Sort by ICR (lowest first)
+      const allTroves = processedTroves.sort((a, b) => a.icr - b.icr)
+
+
+      // Count redeemable and liquidatable
+      const redeemableCount = allTroves.filter(t => t.redeemable).length
+      const liquidatableCount = allTroves.filter(t => t.atRisk).length
+
+
+      console.log(`🎯 ${allTroves.length} active troves found`)
+      console.log(`✨ Redeemable (110-150%): ${redeemableCount}`)
+      console.log(`⚠️ Liquidatable (<110%): ${liquidatableCount}`)
+      
       if (allTroves.length > 0) {
-        console.table(allTroves.slice(0, 5))
+        console.log('📊 Top 5 riskiest troves:')
+        console.table(allTroves.slice(0, 5).map(t => ({
+          owner: t.owner.slice(0, 10),
+          icr: t.icr.toFixed(2) + '%',
+          debt: formatEther(t.debt),
+          redeemable: t.redeemable,
+          atRisk: t.atRisk
+        })))
       }
 
-      return allTroves
+
+      // ✅ APPEND CLOSED TROVES AT THE END
+      return [...allTroves, ...skippedTroves.value]
+
 
     } catch (error) {
       console.error('❌ Trove fetch failed:', error)
@@ -167,7 +279,8 @@ export function useTroves() {
     }
   }
 
-  function testTroves(): TroveInfo[] {
+
+  function testTroves(): TroveInfoUI[] {
     console.log('🧪 Using test data (fallback)')
     return [
       {
@@ -175,29 +288,33 @@ export function useTroves() {
         icr: 112.34,
         debt: parseEther('1500'),
         collateral: parseEther('16'),
-        atRisk: true,
-        redeemable: true
+        atRisk: false,
+        redeemable: true,
+        closed: false
       },
       {
         owner: '0xabcdef1234567890abcdef1234567890abcdef12' as Address,
         icr: 119.87,
         debt: parseEther('3200'),
         collateral: parseEther('36'),
-        atRisk: true,
-        redeemable: true
+        atRisk: false,
+        redeemable: true,
+        closed: false
       }
     ]
   }
 
+
   const troves = useQuery({ 
     queryKey: ['troves'], 
     queryFn: getTroves,
-    refetchInterval: 30_000,
-    staleTime: 10_000
+    staleTime: Infinity  // ✅ Never auto-refresh, only manual
   })
+
 
   return {
     troves,
-    skippedTroves
+    skippedTroves,
+    liveTroves
   }
 }

@@ -111,25 +111,39 @@ async function openRiskyTrove() {
     const networkContracts = await getNetworkContracts()
     const walletClient = getWalletClient()
     
-    const coll = parseEther(newTroveCol.value.toString())
-    const debt = parseEther(newTroveDebt.value.toString())
-    
     const chainId = await publicClient.getChainId()
     const isFork = chainId === 31337
     
     console.log(`🌐 Opening trove on ${isFork ? 'Fork (31337)' : `Chain ${chainId}`}`)
     
-    const gasComp = await publicClient.readContract({
-      address: networkContracts.TROVE_MANAGER,
-      abi: troveManagerAbi,
-      functionName: 'MUSD_GAS_COMPENSATION'
-    }) as bigint
+    // ✅ USE USER INPUT
+    const coll = parseEther(newTroveCol.value.toString())
+    const debt = parseEther(newTroveDebt.value.toString())
     
-    let borrowingFee: bigint
+    console.log('📝 User inputs:', {
+      coll: formatEther(coll) + ' BTC',
+      debt: formatEther(debt) + ' MUSD'
+    })
     
+    // ✅ CONDITIONAL GAS COMPENSATION
+    let gasComp: bigint
     if (isFork) {
-      borrowingFee = debt / 100n
-      console.log('🔧 Using stub borrowing fee (fork)')
+      gasComp = parseEther('200')  // Stub for corrupted fork
+      console.log('🔧 Using stub gas compensation (fork): 200 MUSD')
+    } else {
+      gasComp = await publicClient.readContract({
+        address: networkContracts.TROVE_MANAGER,
+        abi: troveManagerAbi,
+        functionName: 'MUSD_GAS_COMPENSATION'
+      }) as bigint
+      console.log('✅ Using real gas compensation:', formatEther(gasComp))
+    }
+    
+    // ✅ CONDITIONAL BORROWING FEE
+    let borrowingFee: bigint
+    if (isFork) {
+      borrowingFee = parseEther('0.01')  // Stub fee matching script
+      console.log('🔧 Using stub borrowing fee (fork): 0.01 MUSD')
     } else {
       try {
         borrowingFee = await publicClient.readContract({
@@ -138,7 +152,7 @@ async function openRiskyTrove() {
           functionName: 'getBorrowingFee',
           args: [debt]
         }) as bigint
-        console.log('✅ Using real borrowing fee')
+        console.log('✅ Using real borrowing fee:', formatEther(borrowingFee))
       } catch (error) {
         console.warn('⚠️ getBorrowingFee failed, using 0.5% estimate')
         borrowingFee = (debt * 5n) / 1000n
@@ -150,74 +164,44 @@ async function openRiskyTrove() {
 
     console.log('📊 Trove Params:', {
       coll: formatEther(coll) + ' BTC',
-      collWei: coll.toString(),
       debt: formatEther(debt) + ' MUSD',
-      debtWei: debt.toString(),
       gasComp: formatEther(gasComp),
-      gasCompWei: gasComp.toString(),
       fee: formatEther(borrowingFee),
-      feeWei: borrowingFee.toString(),
       totalDebt: formatEther(totalDebt),
-      totalDebtWei: totalDebt.toString(),
       nicr: nicr.toString(),
       icrPercent: newTroveICR.value.toFixed(2) + '%'
     })
 
     console.log('🔍 Fetching hints...')
-    console.log('  HintHelpers address:', networkContracts.HINT_HELPERS)
-    console.log('  SortedTroves address:', networkContracts.SORTED_TROVES)
-    console.log('  NICR for hints:', nicr.toString())
 
-    const [approxHint, diff, latestRandomSeed] = await publicClient.readContract({
+    const [approxHint] = await publicClient.readContract({
       address: networkContracts.HINT_HELPERS,
       abi: hintHelpersAbi,
       functionName: 'getApproxHint',
       args: [nicr, 15n, 42n]
     }) as [Address, bigint, bigint]
 
-    console.log('  ✅ getApproxHint result:', {
-      approxHint,
-      diff: diff.toString(),
-      latestRandomSeed: latestRandomSeed.toString()
-    })
+    console.log('  ✅ getApproxHint:', approxHint)
 
-    const [upperHint, lowerHint] = await publicClient.readContract({
+    let [upperHint, lowerHint] = await publicClient.readContract({
       address: networkContracts.SORTED_TROVES,
       abi: sortedTrovesAbi,
       functionName: 'findInsertPosition',
       args: [nicr, approxHint, approxHint]
     }) as [Address, Address]
 
-    console.log('  ✅ findInsertPosition result:', { 
-      upperHint, 
-      lowerHint,
-      lowerIsZero: lowerHint === '0x0000000000000000000000000000000000000000'
-    })
+    console.log('  ✅ findInsertPosition:', { upperHint, lowerHint })
 
+    // 🔧 Handle edge case: lowerHint=0x0
     if (lowerHint === '0x0000000000000000000000000000000000000000' && 
-        upperHint === '0x0000000000000000000000000000000000000000') {
-      console.error('❌ Both hints are address(0) - checking if list is empty...')
-      
-      try {
-        const listSize = await publicClient.readContract({
-          address: networkContracts.SORTED_TROVES,
-          abi: sortedTrovesAbi,
-          functionName: 'getSize',
-          args: []
-        }) as bigint
-        
-        console.log('📏 SortedTroves list size:', listSize.toString())
-        
-        if (listSize === 0n) {
-          console.log('✅ List is empty - you will be the first trove. Hints (0x0, 0x0) are valid.')
-        } else {
-          throw new Error('Invalid hints received despite non-empty list. Check NICR calculation.')
-        }
-      } catch (sizeError) {
-        console.warn('⚠️ Could not check list size:', sizeError)
-      }
+        upperHint !== '0x0000000000000000000000000000000000000000') {
+      console.warn('⚠️ lowerHint is 0x0, using upperHint')
+      lowerHint = upperHint
     }
 
+    console.log('📤 Submitting openTrove...')
+
+    // ✅ CONDITIONAL GAS (fixed gas for fork, auto-estimate for mainnet)
     const txOptions: any = {
       address: networkContracts.BORROWER_OPERATIONS,
       abi: borrowerOperationsAbi,
@@ -228,53 +212,50 @@ async function openRiskyTrove() {
     }
     
     if (isFork) {
-      txOptions.gas = 3000000n
-      console.log('🔧 Using fixed gas (fork)')
+      txOptions.gas = 3_000_000n
+      console.log('🔧 Using fixed gas (fork): 3M')
     } else {
-      console.log('⛽ Using auto gas estimation')
+      console.log('🔧 Using auto gas estimation (mainnet)')
     }
-
-    console.log('📤 Submitting transaction with args:', {
-      debt: debt.toString(),
-      upperHint,
-      lowerHint,
-      value: coll.toString()
-    })
 
     const hash = await walletClient.writeContract(txOptions)
     console.log('⏳ Tx submitted:', hash)
     
+    console.log('   Waiting for receipt...')
     const receipt = await publicClient.waitForTransactionReceipt({ 
       hash,
       timeout: 120_000
     })
     
-    console.log('📜 Receipt:', {
-      status: receipt.status,
-      blockNumber: receipt.blockNumber?.toString(),
-      gasUsed: receipt.gasUsed?.toString()
-    })
+    console.log('📜 Receipt:', receipt.status, 'Gas:', receipt.gasUsed?.toString())
     
     if (receipt.status === 'success') {
-      alert(`✅ Trove Opened!\n\nICR: ${newTroveICR.value.toFixed(2)}%\nDebt: ${newTroveDebt.value} MUSD\nCollateral: ${newTroveCol.value} BTC\n\nTx: ${hash}`)
+      alert(
+        `✅ Trove Opened!\n\n` +
+        `Collateral: ${newTroveCol.value} BTC\n` +
+        `Debt: ${newTroveDebt.value} MUSD\n` +
+        `ICR: ${newTroveICR.value.toFixed(2)}%\n\n` +
+        `Tx: ${hash}`
+      )
       emit('success')
       emit('close')
     } else {
+      console.error('❌ Transaction Receipt Failed:', receipt)
       throw new Error('Transaction reverted')
     }
     
   } catch (error: any) {
-    console.error('❌ Full error:', error)
+    console.error('❌ Failed:', error)
     
     let msg = 'Unknown error'
     if (error.message?.includes('TCR')) {
       msg = 'System TCR < 110%. Protocol in recovery mode.'
     } else if (error.message?.includes('insufficient')) {
-      msg = `Need ${newTroveCol.value} BTC + gas.`
+      msg = 'Insufficient balance.'
     } else if (error.message?.includes('ICR')) {
-      msg = 'ICR too low. Add more collateral.'
+      msg = 'ICR too low.'
     } else if (error.message?.includes('rejected')) {
-      msg = 'User cancelled transaction.'
+      msg = 'User cancelled.'
     } else {
       msg = error.shortMessage || error.message || String(error)
     }
