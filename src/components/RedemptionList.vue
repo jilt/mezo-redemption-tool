@@ -135,7 +135,7 @@ const musdTokenAbi = [
   }
 ] as const
 
-const { troves, skippedTroves, liveTroves } = useTroves()
+const { troves, liveTroves } = useTroves()
 const walletConnected = ref(false)
 const address = ref<Address | null>(null)
 const connecting = ref(false)
@@ -188,7 +188,6 @@ const userTrove = computed(() => {
 })
 
 const contractsLoaded = computed(() => !!contracts.value)
-const isRedeemable = (trove: TroveInfo) => trove.redeemable
 
 const lastUpdated = computed(() => {
   if (!troves.dataUpdatedAt?.value) return null
@@ -198,10 +197,6 @@ const lastUpdated = computed(() => {
 // Formatters
 const formatDebt = (debt: bigint): string => {
   return (Number(debt) / 1e18).toLocaleString('en-US', { maximumFractionDigits: 0 })
-}
-
-const formatCollateral = (collateral: bigint, price: number): string => {
-  return (Number(collateral) * price / 1e18).toLocaleString('en-US', { maximumFractionDigits: 0 })
 }
 
 // Get network contracts
@@ -650,7 +645,7 @@ async function redeemAmount(amountMUSD: string) {
 
 // Keep for UI compatibility
 async function redeemTrove(trove: TroveInfo) {
-  const amount = prompt('Enter MUSD amount to redeem:', '100')
+  const amount = customRedemptionAmounts.value[trove.owner] || prompt('Enter MUSD amount to redeem:', '100')
   if (!amount || Number(amount) <= 0) return
   await redeemAmount(amount)
 }
