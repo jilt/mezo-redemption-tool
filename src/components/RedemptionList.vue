@@ -273,11 +273,6 @@ const userTrove = computed(() => {
 
 const contractsLoaded = computed(() => !!contracts.value)
 
-const lastUpdated = computed(() => {
-  if (!troves.dataUpdatedAt?.value) return null
-  return new Date(troves.dataUpdatedAt.value).toLocaleTimeString()
-})
-
 // Formatters
 const formatDebt = (debt: bigint): string => {
   return (Number(debt) / 1e18).toLocaleString('en-US', { maximumFractionDigits: 0 })
