@@ -1,15 +1,9 @@
 <template>
-  <div class="p-8 max-w-6xl mx-auto bg-gradient-to-br from-gray-900 via-purple-900/20 to-black min-h-screen">
+  <div class="min-h-screen bg-gray-900 text-white font-sans selection:bg-pink-500 selection:text-white flex flex-col">
     <RedemptionHeader
-      :chain-name="publicClient.chain?.name"
       :wallet-connected="walletConnected"
       :address="address"
       :connecting="connecting"
-      :trove-count="troves.data?.value?.length || 0"
-      :redeemable-count="redeemableCount"
-      :liquidatable-count="liquidatableCount"
-      :last-updated="lastUpdated"
-      @open-trove="showModal = true"
       @toggle-wallet="toggleWallet"
     />
 
@@ -22,64 +16,156 @@
       @success="troves.refetch()" 
     />
 
-    <RedemptionStats
-      v-if="showDebug"
-      :chain-id="chainId"
-      :btc-price="btcPrice"
-      :is-fallback-price="isFallbackPrice"
-      :contracts-loaded="contractsLoaded"
-      :redeemable-count="redeemableCount"
-      :liquidatable-count="liquidatableCount"
-    />
+    <!-- Main Content Area -->
+    <main class="flex flex-col items-center justify-center p-4 mt-4 sm:mt-12 flex-grow">
+      
+      <!-- Central Card -->
+      <div class="animated-border w-full max-w-[520px] bg-gray-800/80 backdrop-blur-xl rounded-3xl p-4 shadow-2xl">
+        
+        <!-- Card Header -->
+        <div class="flex justify-center items-center p-4 pb-2 terminal-text text-lg text-accent">MANAGE TROVES...
+          <span class="blink">█</span>
+        </div>
 
-    <br /><br />
-    
-    <RedemptionToolbar
-      :is-fetching="troves.isFetching.value"
-      :wallet-connected="walletConnected"
-      :redeemable-count="redeemableCount"
-      :user-owns-trove="userOwnsTrove"
-      :user-trove="userTrove"
-      @refresh="troves.refetch()"
-      @redeem-riskiest="redeemRiskiest"
-      @close-trove="closeTrove"
-      @add-collateral="addCollateral"
-    />
+        <!-- Stats Section (Moved from Menu) -->
+        <div class="px-4 pb-2">
+          <div class="bg-gray-900/40 rounded-xl p-4 text-sm">
+            <div class="flex justify-between">
+              <span class="text-gray-400">Chain ID</span>
+              <span class="font-mono text-gray-200">{{ chainId }}</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-gray-400">BTC Price</span>
+              <span class="font-mono text-gray-200">${{ btcPrice.toLocaleString() }}</span>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="text-gray-400">Contracts</span>
+              <svg v-if="contractsLoaded" class="w-[20px] h-[20px] text-[hsl(var(--primary))]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+              <svg v-else class="w-[20px] h-[20px] text-[hsl(var(--primary))]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-gray-400">Redeemable (110-150%)</span>
+              <span class="text-yellow-400 font-bold">{{ redeemableCount }}</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-gray-400">Liquidatable (&lt;110%)</span>
+              <span class="text-red-400 font-bold">{{ liquidatableCount }}</span>
+            </div>
+          </div>
+        </div>
 
-    <!-- Loading -->
-    <RedemptionLoading
-      v-if="troves.isPending"
-      :chain-name="publicClient.chain?.name"
-      :live-troves="liveTroves"
-      :btc-price="btcPrice"
-    />
+        <!-- Main Action Area -->
+        <div class="bg-gray-900/50 rounded-2xl p-4 mb-2 mt-4 mx-4">
+          <div class="flex flex-col gap-3">
+            <!-- Open Trove Button -->
+            <button 
+              @click="showModal = true"
+              :disabled="!walletConnected"
+              class="retro-button w-full"
+            >
+              Open New Trove
+            </button>
+            
+            <!-- User Trove Actions (if owned) -->
+            <div v-if="userOwnsTrove && userTrove" class="bg-gray-800/50 rounded-xl p-3 border border-gray-700/50 mt-2">
+              <div class="flex justify-between items-center mb-2 text-sm text-gray-400">
+                <span>Your Position</span>
+                <span class="font-mono text-white">ICR {{ userTrove.icr.toFixed(2) }}%</span>
+              </div>
+              <div class="grid grid-cols-2 gap-2">
+                <button @click="addCollateral" class="retro-button w-full .bg-destructive">
+                  + Collateral
+                </button>
+                <button @click="closeTrove" class="retro-button bg-accent w-full">
+                  Close Trove
+                </button>
+              </div>
+            </div>
 
-    <!-- Error -->
-    <RedemptionError
-      v-else-if="troves.error?.value"
-      :message="troves.error.value.message"
-      @retry="troves.refetch()"
-    />
+            <!-- Refresh & Redeem Buttons -->
+            <div class="grid grid-cols-2 gap-2 mt-1">
+               <button 
+                 @click="troves.refetch()"
+                 :disabled="troves.isFetching.value"
+                 class="bg-accent retro-button w-full flex items-center justify-center gap-2"
+               >
+                 <svg :class="{ 'animate-spin': troves.isFetching.value }" class="w-[20px] h-[20px] text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                  Refresh
+               </button>
+               <button 
+                 @click="redeemRiskiest"
+                 :disabled="!walletConnected || redeemableCount === 0" class="bg-destructive retro-button w-full flex items-center justify-center gap-2"
+               >
+                 <svg class="w-[20px] h-[20px] text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                 Redeem Riskiest
+               </button>
+            </div>
+          </div>
+        </div>
 
-    <!-- Empty -->
-    <RedemptionEmpty v-else-if="!troves.data?.value?.length" />
+        <!-- Accordion Trigger -->
+        <div class="flex justify-center h-[60px]">
+          <button 
+          @click="isTrovesOpen = !isTrovesOpen"
+          class="retro-button flex items-center gap-2 px-4 py-2 w-full justify-center h-full m-0"
+        >
+          <span class="font-medium">Troves List ({{ troves.data?.value?.length || 0 }})</span>
+          <svg 
+            class="h-full w-auto transform transition-transform duration-300 text-black"
+            :class="{ 'rotate-180': isTrovesOpen }"
+            fill="none" stroke="currentColor" viewBox="0 0 24 24"
+          >
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+          </svg>
+          </button>
+        </div>
 
-    <!-- Troves Table -->
-    <RedemptionTable
-      v-else
-      :troves="sortedTroves"
-      :sort-dir="sortDir"
-      :btc-price="btcPrice"
-      :wallet-connected="walletConnected"
-      :redeeming="redeeming"
-      :custom-redemption-amounts="customRedemptionAmounts"
-      @toggle-sort="toggleSort"
-      @redeem-trove="redeemTrove"
-      @update-amount="updateAmount"
-    />
+        <!-- Accordion Content (Trove List) -->
+        <div 
+          v-show="isTrovesOpen" class="mt-2 p-1 bg-gray-900/50 rounded-2xl max-h-[300px] overflow-y-auto custom-scrollbar  mt-[20px]"
+        >
+          <!-- Loading -->
+          <RedemptionLoading
+            v-if="troves.isPending.value"
+            :chain-name="publicClient.chain?.name"
+            :live-troves="liveTroves"
+            :btc-price="btcPrice"
+          />
+
+          <!-- Error -->
+          <RedemptionError
+            v-else-if="troves.error?.value"
+            :message="troves.error.value.message"
+            @retry="troves.refetch()"
+          />
+
+          <!-- Empty -->
+          <RedemptionEmpty v-else-if="!troves.data?.value?.length" />
+
+          <!-- Troves Table -->
+          <RedemptionTable
+            v-else
+            :troves="sortedTroves"
+            :sort-dir="sortDir"
+            :btc-price="btcPrice"
+            :wallet-connected="walletConnected"
+            :redeeming="redeeming"
+            :custom-redemption-amounts="customRedemptionAmounts"
+            @toggle-sort="toggleSort"
+            @redeem-trove="redeemTrove"
+            @update-amount="updateAmount"
+          />
+        </div>
+
+      </div>
+    </main>
 
     <!-- Info Section -->
     <RedemptionInfo />
+
+    <footer class="w-full text-center p-4 text-gray-500 text-sm mt-8 mb-4 font-mono">
+      created by <a href="https://jeeltcraft.com" target="_blank" rel="noopener noreferrer" class="text-accent hover:underline">jeeltcraft</a> with <svg class="w-[20px] h-[20px] text-[hsl(var(--primary))] inline-block" fill="currentColor" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg> | © 2026
+    </footer>
   </div>
 </template>
 
@@ -96,8 +182,6 @@ import { sortedTrovesAbi } from '../abis/SortedTroves'
 import { borrowerOperationsAbi } from '../abis/BorrowerOperations'
 import OpenTroveModal from './OpenTroveModal.vue'
 import RedemptionHeader from './RedemptionHeader.vue'
-import RedemptionStats from './RedemptionStats.vue'
-import RedemptionToolbar from './RedemptionToolbar.vue'
 import RedemptionLoading from './RedemptionLoading.vue'
 import RedemptionError from './RedemptionError.vue'
 import RedemptionEmpty from './RedemptionEmpty.vue'
@@ -143,11 +227,11 @@ const redeeming = ref(false)
 const btcPrice = ref(0)
 const isFallbackPrice = ref(false)
 const contracts = ref<any>(null)
-const showDebug = ref(true)
 const showModal = ref(false)
 const customRedemptionAmounts = ref<Record<string, string>>({})
 const chainId = ref<number>(0)
 const sortDir = ref<'asc' | 'desc'>('asc')
+const isTrovesOpen = ref(false)
 
 const toggleSort = () => {
   sortDir.value = sortDir.value === 'asc' ? 'desc' : 'asc'
@@ -681,3 +765,16 @@ onMounted(async () => {
   }
 })
 </script>
+
+<style scoped>
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: #374151;
+  border-radius: 20px;
+}
+</style>

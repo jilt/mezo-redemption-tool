@@ -1,12 +1,12 @@
 <template>
   <div class="modal fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-md transition-all">
     <div class="modal-dialog relative w-full max-w-lg p-4">
-      <div class="modal-content bg-gray-900 border border-gray-700 rounded-3xl shadow-2xl flex flex-col max-h-[90vh]">
+      <div class="modal-content flex flex-col max-h-[90vh]">
         
         <!-- Header -->
-        <div class="modal-header flex justify-between items-center p-6 border-b border-gray-800">
-          <h2 class="text-3xl font-bold text-white">Open Risky Trove</h2>
-          <button @click="$emit('close')" class="text-gray-400 hover:text-white text-2xl transition-colors">✕</button>
+        <div class="modal-header flex justify-between items-center p-6">
+          <h2 class="text-3xl font-bold text-accent">Open Risky Trove</h2>
+          <button @click="$emit('close')" class="retro-button close">✕</button>
         </div>
 
         <!-- Body -->
@@ -17,7 +17,7 @@
               v-model="newTroveCol" 
               type="number" 
               step="0.001" 
-              class="w-full bg-gray-800 border border-gray-600 rounded-xl p-4 text-white text-xl focus:border-purple-500 outline-none transition-colors" 
+              class="w-[180px] p-4 mt-[5px] bg-transparent border border-[hsl(var(--primary))] text-[hsl(var(--terminal))] outline-none transition-colors" 
             />
           </div>
           
@@ -27,32 +27,44 @@
               v-model="newTroveDebt" 
               type="number" 
               step="100" 
-              class="w-full bg-gray-800 border border-gray-600 rounded-xl p-4 text-white text-xl focus:border-purple-500 outline-none transition-colors" 
+              class="w-[180px] p-4 mt-[5px] bg-transparent border border-[hsl(var(--primary))] text-[hsl(var(--terminal))] outline-none transition-colors" 
             />
           </div>
-
-          <div class="bg-gray-800/50 rounded-xl p-4 border border-gray-700">
+          <br/>
+          <div class="w-full">
             <div class="flex justify-between items-center mb-2">
-              <span class="text-gray-400">Projected ICR</span>
+              <span class="text-accent">Projected ICR</span>
               <span :class="[
-                'font-bold text-xl', 
-                newTroveICR < 110 ? 'text-red-500' : newTroveICR < 150 ? 'text-orange-400' : 'text-emerald-400'
+                'text-terminal', 
+                newTroveICR < 110 ? 'text-terminal' : newTroveICR < 150 ? 'text-terminal' : 'text-terminal'
               ]">
                 {{ newTroveICR.toFixed(2) }}%
               </span>
             </div>
-            <div class="text-xs text-right" :class="newTroveICR >= 110 && newTroveICR < 150 ? 'text-orange-400' : 'text-gray-500'">
-              {{ newTroveICR < 110 ? '⚠️ Liquidation Risk (Invalid)' : newTroveICR < 150 ? '🎯 Target Zone (Risky)' : '🛡️ Safe Zone' }}
+            <br />
+            <div class="flex items-center justify-center gap-2 text-terminal">
+              <template v-if="newTroveICR < 110">
+                <svg class="w-[20px] h-[20px] text-[hsl(var(--primary))]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                   Liquidation Risk
+              </template>
+              <template v-else-if="newTroveICR < 150">
+                <svg class="w-[20px] h-[20px] text-[hsl(var(--primary))]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8a4 4 0 100 8 4 4 0 000-8z"></path></svg>
+                  Redemption Risk
+              </template>
+              <template v-else>
+                <svg class="w-[20px] h-[20px] text-[hsl(var(--primary))]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                  Safe Zone
+              </template>
             </div>
           </div>
         </div>
-
+        <br />
         <!-- Footer -->
         <div class="modal-footer p-6 border-t border-gray-800 bg-gray-900/50 rounded-b-3xl">
           <button 
             @click="openRiskyTrove"
             :disabled="openingTrove || newTroveICR < 110"
-            class="w-full py-4 rounded-xl font-bold text-xl shadow-lg transition-all flex justify-center items-center gap-2"
+            class="retro-button bg-accent w-full flex items-center justify-center gap-2"
             :class="openingTrove || newTroveICR < 110 ? 'bg-gray-700 text-gray-500 cursor-not-allowed' : 'bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white'"
           >
             <span v-if="openingTrove" class="animate-spin rounded-full w-5 h-5 border-2 border-white/20 border-t-white"></span>

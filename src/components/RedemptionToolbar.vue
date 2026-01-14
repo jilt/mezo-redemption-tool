@@ -5,7 +5,7 @@
       <button
         @click="$emit('refresh')"
         :disabled="isFetching"
-        class="mr-4 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed rounded-lg transition-colors flex items-center gap-2"
+        class=" bg-destructive retro-button mr-4 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed rounded-lg transition-colors flex items-center gap-2"
       >
         <span v-if="isFetching">🔄</span>
         <span v-else>🔃</span>
@@ -15,7 +15,7 @@
       <button
         v-if="walletConnected && redeemableCount > 0"
         @click="$emit('redeem-riskiest')"
-        class="px-4 py-2 bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 rounded-lg transition-colors"
+        class="bg-accent retro-button px-4 py-2 bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 rounded-lg transition-colors"
       >
         ⚡ Redeem Riskiests
       </button>
