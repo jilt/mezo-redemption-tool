@@ -58,8 +58,6 @@ defineProps<{
 
 defineEmits(['toggleSort', 'redeemTrove', 'updateAmount'])
 
-const isRedeemable = (trove: TroveInfo) => trove.redeemable
-
 const formatDebt = (debt: bigint): string => {
   return (Number(debt) / 1e18).toLocaleString('en-US', { maximumFractionDigits: 0 })
 }
