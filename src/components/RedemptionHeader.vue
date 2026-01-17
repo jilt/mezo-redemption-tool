@@ -1,12 +1,11 @@
 <template>
-  <div class="flex items-center justify-between p-4 max-w-7xl mx-auto w-full">
-    <div class="flex items-center gap-4">
+  <div class="grid grid-cols-2 grid-flow-raw gap-6 items-center p-4 max-w-7xl mx-auto w-full">
+    <div class="flex items-center justify-center md:justify-start gap-4">
       <!-- Logo Area -->
-      <div class="terminal-text text-4xl md:text-6xl font-bold mb-2 glitch">░M░E░Z░O░-░D░A░S░H</div>
-      <br />
+      <div class="terminal-text text-4xl md:text-6xl font-bold mb-2 glitch text-center">░M░E░Z░O░-░D░A░S░H</div>
     </div>
 
-    <div class="flex items-center gap-3">
+    <div class="flex items-center justify-center md:justify-end gap-3">
       <!-- Wallet Connect Button -->
       <button 
         @click="$emit('toggleWallet')" 
@@ -18,7 +17,7 @@
       </button>
     </div>
   </div>
-  <div class="terminal-text text-lg md:text-2xl text-primary/80 mb-8 animate-pulse">&gt;&gt; manage, redeem or liquidate &lt;&lt;</div>
+  <div class="terminal-text text-lg md:text-2xl text-primary/80 mb-8 animate-pulse text-center">&gt;&gt; manage, redeem or liquidate &lt;&lt;</div>
   <br/>
   <br/>
 </template>
