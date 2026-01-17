@@ -16,8 +16,8 @@
       If a redemption completely clears your debt, you keep the surplus BTC and can claim it. This is "neutral or even positive" for the borrower; it's not a liquidation.
     </p>
     </div>
-    <br/><br/>
-    <div class="grid grid-cols-2 grid-flow-rows gap-6">
+    <br/>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-flow-rows gap-6">
       <!-- Liquidation Card -->
       <div class="retro-card background-card p-6 shadow-sm">
         <h4 class="text-xl font-bold text-accent mb-4 pb-2">Liquidation</h4>
