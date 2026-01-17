@@ -24,7 +24,7 @@
         <ul class="space-y-3 text-gray-300 list-disc list-inside">
           <li>Your ICR &lt; 110%</li>
           <li>Stability Pool + liquidator bonus</li>
-          <li>You lose trove</li>
+          <li>Owner lose trove</li>
         </ul>
       </div>
 
@@ -33,7 +33,7 @@
         <h4 class="text-xl font-bold text-accent mb-4 pb-2">Redemption</h4>
         <ul class="space-y-3 text-gray-300 list-disc list-inside">
           <li>MUSD &lt; $1, your trove is lowest ≥110%</li>
-          <li>Redeemer gets BTC, you lose debt</li>
+          <li>Redeemer gets BTC, owner lose debt</li>
           <li>ICR goes up ↗</li>
         </ul>
       </div>
