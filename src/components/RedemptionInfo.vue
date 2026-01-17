@@ -1,7 +1,7 @@
 <template>
   <div class="mt-16 p-8">
     <br/><br/>
-    <div class="shadow-sm retro-card">
+    <div class="shadow-sm retro-card background-card">
       <h3 class="text-2xl font-bold text-accent mb-6">Liquidation vs Redemption</h3>
       <p class="text-gray-400 text-sm mb-8">You only redeem when MUSD is trading below $1 on the market:<br/>
       Example: MUSD trades at $0.95 on an exchange.<br/>
@@ -17,31 +17,26 @@
     </p>
     </div>
     <br/><br/>
-    <div class="overflow-x-auto shadow-sm retro-card">
-      <table class="w-full text-left border-collapse">
-        <thead>
-          <tr class="border-b border-gray-700 text-gray-400 text-sm uppercase tracking-wider">
-            <th class="p-4 text-accent">Mechanism</th>
-            <th class="p-4 text-accent">Trigger</th>
-            <th class="p-4 text-accent">Who gets collateral?</th>
-            <th class="p-4 text-accent">Your ICR after</th>
-          </tr>
-        </thead>
-        <tbody class="text-gray-300">
-          <tr class="border-b border-gray-800 hover:bg-white/5 transition-colors">
-            <td class="p-4">Liquidation </td>
-            <td class="p-4">  Your ICR &lt; 110%</td>
-            <td class="p-4">Stability Pool + liquidator bonus</td>
-            <td class="p-4">You lose trove</td>
-          </tr>
-          <tr class="hover:bg-white/5 transition-colors">
-            <td class="p-4">Redemption </td>
-            <td class="p-4"> MUSD &lt; $1, your trove is lowest ≥110%</td>
-            <td class="p-4">Redeemer gets BTC, you lose debt</td>
-            <td class="p-4">ICR goes up ↗</td>
-          </tr>
-        </tbody>
-      </table>
+    <div class="grid grid-cols-2 md:grid-cols-2 gap-6">
+      <!-- Liquidation Card -->
+      <div class="retro-card background-card p-6 shadow-sm">
+        <h4 class="text-xl font-bold text-accent mb-4 pb-2">Liquidation</h4>
+        <ul class="space-y-3 text-gray-300 list-disc list-inside">
+          <li><strong class="text-gray-400">Trigger:</strong> Your ICR &lt; 110%</li>
+          <li><strong class="text-gray-400">Collateral:</strong> Stability Pool + liquidator bonus</li>
+          <li><strong class="text-gray-400">Result:</strong> You lose trove</li>
+        </ul>
+      </div>
+
+      <!-- Redemption Card -->
+      <div class="retro-card background-card p-6 shadow-sm">
+        <h4 class="text-xl font-bold text-accent mb-4 pb-2">Redemption</h4>
+        <ul class="space-y-3 text-gray-300 list-disc list-inside">
+          <li><strong class="text-gray-400">Trigger:</strong> MUSD &lt; $1, your trove is lowest ≥110%</li>
+          <li><strong class="text-gray-400">Collateral:</strong> Redeemer gets BTC, you lose debt</li>
+          <li><strong class="text-gray-400">Result:</strong> ICR goes up ↗</li>
+        </ul>
+      </div>
     </div>
   </div>
 </template>

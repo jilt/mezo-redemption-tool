@@ -83,7 +83,7 @@
             </div>
 
             <!-- Refresh & Redeem Buttons -->
-            <div class="grid grid-cols-2 gap-2 mt-1">
+            <div class="grid grid-cols-2 gap-6 mt-1">
                <button 
                  @click="troves.refetch()"
                  :disabled="troves.isFetching.value"
@@ -100,6 +100,18 @@
                  Redeem Riskiest
                </button>
             </div>
+
+            <!-- Liquidation Button (Only visible if liquidatable troves exist) -->
+            <button 
+              v-if="liquidatableCount > 0"
+              @click="liquidateTroves"
+              :disabled="liquidating || !walletConnected"
+              class="retro-button w-full items-center justify-center gap-2 transition-all"
+            >
+              <span v-if="liquidating" class="animate-spin rounded-full w-5 h-5 border-2 border-white/20 border-t-white"></span>
+              <svg v-else class="w-[20px] h-[20px]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+              Liquidate {{ liquidatableCount }} Trove{{ liquidatableCount !== 1 ? 's' : '' }}
+            </button>
           </div>
         </div>
 
@@ -226,6 +238,7 @@ const connecting = ref(false)
 const redeeming = ref(false)
 const btcPrice = ref(0)
 const isFallbackPrice = ref(false)
+const liquidating = ref(false)
 const contracts = ref<any>(null)
 const showModal = ref(false)
 const customRedemptionAmounts = ref<Record<string, string>>({})
@@ -255,7 +268,7 @@ const liquidatableCount = computed(() => {
   return troves.data?.value?.filter((trove: TroveInfo) => trove.atRisk).length || 0
 })
 
-// ✅ Check if user owns a trove
+// Check if user owns a trove
 const userOwnsTrove = computed(() => {
   if (!address.value || !troves.data.value) return false
   return troves.data.value.some((trove: TroveInfo) => 
@@ -719,6 +732,48 @@ async function redeemAmount(amountMUSD: string) {
     alert(`❌ Failed:\n\n${errorMsg}`)
   } finally {
     redeeming.value = false
+  }
+}
+
+// ✅ LIQUIDATE TROVES
+async function liquidateTroves() {
+  if (!walletConnected.value || !address.value) {
+    alert('Please connect wallet first')
+    return
+  }
+
+  const liquidatable = troves.data.value?.filter((t: TroveInfo) => t.atRisk) || []
+  if (liquidatable.length === 0) return
+
+  const confirmed = confirm(`Are you sure you want to liquidate ${liquidatable.length} trove(s)?`)
+  if (!confirmed) return
+
+  liquidating.value = true
+  try {
+    const networkContracts = await getContracts()
+    const walletClient = getWalletClient()
+    
+    const troveOwners = liquidatable.map((t: TroveInfo) => t.owner)
+    console.log('🔥 Liquidating troves:', troveOwners)
+
+    const hash = await walletClient.writeContract({
+      address: networkContracts.TROVE_MANAGER,
+      abi: troveManagerAbi,
+      functionName: 'batchLiquidateTroves',
+      account: address.value,
+      args: [troveOwners]
+    }) as `0x${string}`
+
+    console.log('⏳ Liquidation tx submitted:', hash)
+    await publicClient.waitForTransactionReceipt({ hash })
+    
+    alert(`✅ Liquidation Successful!\n\nTx: ${hash}`)
+    await troves.refetch()
+  } catch (error: any) {
+    console.error('❌ Liquidation failed:', error)
+    alert(`❌ Liquidation failed: ${error.message || 'Unknown error'}`)
+  } finally {
+    liquidating.value = false
   }
 }
 

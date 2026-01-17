@@ -17,17 +17,17 @@
               v-model="newTroveCol" 
               type="number" 
               step="0.001" 
-              class="w-[180px] p-4 mt-[5px] bg-transparent border border-[hsl(var(--primary))] text-[hsl(var(--terminal))] outline-none transition-colors" 
+              class="w-[180px] p-4 mt-[5px] bg-transparent border border-[hsl(var(--primary))] text-[hsl(var(--terminal))] outline-none transition-colors ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 retro-input"
             />
           </div>
-          
+          <br />
           <div>
             <label class="block text-gray-400 mb-2 text-sm">Debt (MUSD)</label>
             <input 
               v-model="newTroveDebt" 
               type="number" 
               step="100" 
-              class="w-[180px] p-4 mt-[5px] bg-transparent border border-[hsl(var(--primary))] text-[hsl(var(--terminal))] outline-none transition-colors" 
+              class="w-[180px] p-4 mt-[5px] bg-transparent border border-[hsl(var(--primary))] text-[hsl(var(--terminal))] outline-none transition-colors ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 retro-input" 
             />
           </div>
           <br/>

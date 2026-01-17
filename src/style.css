@@ -232,12 +232,25 @@ body {
 }
 
 .retro-card {
-    background-color: hsl(var(--background));
+    background-color: transparent;
     border: 2px solid hsl(var(--primary));
     box-shadow: 4px 4px hsl(var(--primary));
     border-radius: 0;
     padding: 20px 25px;
     transition: all .1s ease-in-out;
+}
+
+.background-card {
+  border-width: 1.125px;
+  border-radius: .125em;
+  box-shadow: none;
+}
+
+.retro-input {
+    padding: .75rem;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace;
+    box-shadow: inset 2px 2px #0000004d;
+    border-radius: .125em;
 }
 
 .modal{
@@ -270,3 +283,5 @@ footer {
 		background-position: 0 0;
 	}
 }
+
+.gap-6 { gap: 1rem; } 

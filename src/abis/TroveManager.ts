@@ -77,6 +77,14 @@ export const troveManagerAbi = [
     "stateMutability": "view",
     "type": "function"
   },
+  // ✅ NEW: Batch Liquidation
+  {
+    "inputs": [{"internalType": "address[]", "name": "_troveArray", "type": "address[]"}],
+    "name": "batchLiquidateTroves",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
   // ✅ NEW: Useful for trove data
   {
     "inputs": [
