@@ -40,8 +40,23 @@ export const InjectedConnector: WalletConnector = {
 export const CoinbaseConnector: WalletConnector = {
   type: CONNECTOR_TYPES.COINBASE,
   connect: async () => {
-    // Implementation would use @coinbase/wallet-sdk
-    throw new Error('Coinbase Wallet not implemented yet')
+    const { default: CoinbaseWalletSDK } = await import('@coinbase/wallet-sdk')
+
+    const sdk = new CoinbaseWalletSDK({
+      appName: 'Mezo Redemption'
+    })
+
+    const provider = sdk.makeWeb3Provider()
+
+    const client = createWalletClient({
+      chain: ACTIVE_CHAIN,
+      transport: custom(provider)
+    })
+
+    const [address] = await client.requestAddresses()
+    if (!address) throw new Error('User rejected connection')
+
+    return { address, client }
   }
 }
 
@@ -49,8 +64,31 @@ export const CoinbaseConnector: WalletConnector = {
 export const WalletConnectConnector: WalletConnector = {
   type: CONNECTOR_TYPES.WALLET_CONNECT,
   connect: async () => {
-    // Implementation would use @walletconnect/ethereum-provider
-    throw new Error('WalletConnect not implemented yet')
+    const { EthereumProvider } = await import('@walletconnect/ethereum-provider')
+
+    // Note: Replace with your Project ID from https://cloud.walletconnect.com/
+    // @ts-ignore
+    const projectId = import.meta.env.VITE_WC_PROJECT_ID || 'YOUR_PROJECT_ID_HERE'
+
+    const provider = await EthereumProvider.init({
+      projectId,
+      chains: [ACTIVE_CHAIN.id],
+      showQrModal: true,
+      methods: ['eth_sendTransaction', 'personal_sign'],
+      events: ['chainChanged', 'accountsChanged']
+    })
+
+    await provider.enable()
+
+    const client = createWalletClient({
+      chain: ACTIVE_CHAIN,
+      transport: custom(provider)
+    })
+
+    const [address] = await client.requestAddresses()
+    if (!address) throw new Error('User rejected connection')
+
+    return { address, client }
   }
 }
 

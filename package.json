@@ -10,9 +10,11 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@coinbase/wallet-sdk": "^4.3.7",
     "@openzeppelin/contracts": "^5.4.0",
     "@openzeppelin/contracts-upgradeable": "^5.4.0",
     "@tanstack/vue-query": "^5.92.1",
+    "@walletconnect/ethereum-provider": "^2.23.3",
     "hardhat": "^2.22.5",
     "pinia": "^3.0.4",
     "tailwindcss": "^4.1.18",
