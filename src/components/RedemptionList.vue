@@ -311,18 +311,7 @@ async function toggleWallet() {
   
   // Check if a browser wallet (MetaMask, Brave, Rabby) is injected
   if ((window as any).ethereum) {
-    // Show the alert to let the user choose
-    const useBrowserWallet = confirm(
-      "Browser wallet detected.\n\n" +
-      "OK = Connect from browser wallet\n" +
-      "Cancel = Connect with app wallet"
-    )
-
-    if (useBrowserWallet) {
-      await connect(CONNECTOR_TYPES.INJECTED)
-    } else {
-      await connect(CONNECTOR_TYPES.WALLET_CONNECT)
-    }
+    await connect(CONNECTOR_TYPES.INJECTED)
   } else {
     await connect(CONNECTOR_TYPES.WALLET_CONNECT)
   }
