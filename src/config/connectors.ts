@@ -45,7 +45,11 @@ export const WalletConnectConnector: WalletConnector = {
 
     // Note: Replace with your Project ID from https://cloud.walletconnect.com/
     // @ts-ignore
-    const projectId = import.meta.env.VITE_WC_PROJECT_ID || 'YOUR_PROJECT_ID_HERE'
+    const projectId = import.meta.env.VITE_WC_PROJECT_ID
+
+    if (!projectId || projectId === 'YOUR_PROJECT_ID_HERE') {
+      throw new Error('Missing WalletConnect Project ID. Please add VITE_WC_PROJECT_ID to your .env file.')
+    }
 
     const provider = await EthereumProvider.init({
       projectId,
