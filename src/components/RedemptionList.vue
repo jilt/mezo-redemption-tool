@@ -314,8 +314,8 @@ async function toggleWallet() {
     // Show the alert to let the user choose
     const useBrowserWallet = confirm(
       "Browser wallet detected.\n\n" +
-      "OK = Connect with MetaMask/Brave\n" +
-      "Cancel = Connect with Mobile App / Other Wallet"
+      "OK = Connect from browser wallet\n" +
+      "Cancel = Connect with app wallet"
     )
 
     if (useBrowserWallet) {

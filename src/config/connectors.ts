@@ -19,7 +19,7 @@ export const InjectedConnector: WalletConnector = {
   type: CONNECTOR_TYPES.INJECTED,
   connect: async () => {
     const provider = (window as any).ethereum
-    if (!provider) throw new Error('No injected wallet found. Please install MetaMask.')
+    if (!provider) throw new Error('No injected wallet found. Please install MetaMask, Rainbow, or another wallet.')
 
     const client = createWalletClient({
       chain: ACTIVE_CHAIN,

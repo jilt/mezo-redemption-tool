@@ -269,6 +269,13 @@ body {
     transition: all .1s ease-in-out;
 }
 
+@media (max-width: 768px) {
+    .modal{
+        left: 0;
+        min-width: 50%;
+    }
+}
+
 footer {
     margin-top:1em;
 }

@@ -1,6 +1,6 @@
 <template>
-  <div class="bg-white/5 overflow-hidden shadow-2xl rounded-3xl">
-    <table class="w-full">
+  <div class="bg-white/5 overflow-x-auto shadow-2xl rounded-3xl">
+    <table class="w-full max-w-[300px]">
       <thead class="bg-gradient-to-r from-gray-900/50 to-gray-800/50 backdrop-blur-sm">
         <tr>
           <th class="p-2 sm:p-4 text-left font-bold text-xs sm:text-sm text-white border-b border-white/10">Owner</th>
@@ -8,7 +8,7 @@
             ICR {{ sortDir === 'asc' ? '↓' : '↑' }}
           </th>
           <th class="p-2 sm:p-4 text-left font-bold text-xs sm:text-sm text-white border-b border-white/10">Debt</th>
-          <th class="p-2 sm:p-4 text-right font-bold text-xs sm:text-sm text-white border-b border-white/10">Collateral</th>
+          <th class="p-2 sm:p-4 text-right font-bold text-xs sm:text-sm text-white border-b border-white/10">Coll.</th>
         </tr>
       </thead>
       <tbody>
@@ -18,7 +18,7 @@
           class="group hover:bg-white/10 transition-all border-b border-white/5"
         >
           <td class="p-2 sm:p-4 font-mono text-xs sm:text-sm text-gray-400 group-hover:text-white whitespace-nowrap">
-            {{ trove.owner.slice(0,6) }}...{{ trove.owner.slice(-4) }}
+            {{ trove.owner.slice(0,6) }}...
           </td>
           <td class="p-2 sm:p-4">
             <span :class="[
@@ -33,7 +33,7 @@
             </span>
           </td>
           <td class="p-2 sm:p-4 font-mono text-xs sm:text-sm text-gray-300 whitespace-nowrap">
-            {{ formatDebt(trove.debt) }} MUSD
+            {{ formatDebt(trove.debt) }}
           </td>
           <td class="p-2 sm:p-4 text-right font-mono text-xs sm:text-sm text-gray-300 whitespace-nowrap">
             ${{ formatCollateral(trove.collateral, btcPrice) }}
