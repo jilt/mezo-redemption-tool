@@ -328,26 +328,6 @@ async function toggleWallet() {
   }
 }
 
-function getChainConfig(chainIdHex: string) {
-  const configs: Record<string, any> = {
-    '0x7b8c': {
-      chainId: '0x7b8c',
-      chainName: 'Mezo Mainnet',
-      rpcUrls: ['https://rpc-http.mezo.boar.network'],
-      nativeCurrency: { name: 'BTC', symbol: 'BTC', decimals: 18 },
-      blockExplorerUrls: ['https://explorer.mezo.org']
-    },
-    '0x7a69': {
-      chainId: '0x7a69',
-      chainName: 'Mezo Fork',
-      rpcUrls: ['http://127.0.0.1:8545'],
-      nativeCurrency: { name: 'BTC', symbol: 'BTC', decimals: 18 },
-      blockExplorerUrls: []
-    },
-  }
-  return configs[chainIdHex.toLowerCase()]
-}
-
 async function redeemRiskiest() {
   const amount = prompt('Enter MUSD amount to redeem:', '100')
   if (!amount || Number(amount) <= 0) return
