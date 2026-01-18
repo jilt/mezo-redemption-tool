@@ -17,6 +17,7 @@
       </button>
     </div>
   </div>
+  <br/>
   <div class="terminal-text text-lg md:text-2xl text-primary/80 mb-8 animate-pulse text-center">&gt;&gt; manage, redeem or liquidate &lt;&lt;</div>
   <br/>
   <br/>

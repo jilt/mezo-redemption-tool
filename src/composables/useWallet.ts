@@ -85,13 +85,19 @@ export function useWallet() {
   /**
    * Connect to a specific wallet provider
    */
-  const connect = async (type: ConnectorType = CONNECTOR_TYPES.WALLET_CONNECT) => {
+  const connect = async (type?: ConnectorType) => {
     isConnecting.value = true
     errorMessage.value = null
     
     try {
-      const connector = connectors[type]
-      if (!connector) throw new Error(`Connector ${type} not found`)
+      // ✅ SMART SELECTION:
+      // 1. If type is explicitly passed, use it.
+      // 2. If window.ethereum exists (Extension or In-App Browser), use INJECTED.
+      // 3. Otherwise use WALLET_CONNECT (Mobile Browser Deep Linking via Modal).
+      const targetType = type || ((window as any).ethereum ? CONNECTOR_TYPES.INJECTED : CONNECTOR_TYPES.WALLET_CONNECT)
+
+      const connector = connectors[targetType]
+      if (!connector) throw new Error(`Connector ${targetType} not found`)
 
       const { address, client, provider } = await connector.connect()
       
@@ -140,6 +146,7 @@ export function useWallet() {
     connect,
     disconnect: disconnectGlobal,
     getBalance,
+    CONNECTOR_TYPES,
     
     // Expose client for advanced usage (like writeContract)
     walletClient,

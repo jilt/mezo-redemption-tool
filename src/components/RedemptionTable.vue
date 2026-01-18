@@ -3,12 +3,12 @@
     <table class="w-full">
       <thead class="bg-gradient-to-r from-gray-900/50 to-gray-800/50 backdrop-blur-sm">
         <tr>
-          <th class="p-6 text-left font-bold text-xl text-white border-b border-white/10">Owner</th>
-          <th class="p-6 text-left font-bold text-xl text-white border-b border-white/10 cursor-pointer hover:text-blue-400 transition-colors select-none" @click="$emit('toggleSort')">
+          <th class="p-2 sm:p-4 text-left font-bold text-xs sm:text-sm text-white border-b border-white/10">Owner</th>
+          <th class="p-2 sm:p-4 text-left font-bold text-xs sm:text-sm text-white border-b border-white/10 cursor-pointer hover:text-blue-400 transition-colors select-none" @click="$emit('toggleSort')">
             ICR {{ sortDir === 'asc' ? '↓' : '↑' }}
           </th>
-          <th class="p-6 text-left font-bold text-xl text-white border-b border-white/10">Debt</th>
-          <th class="p-6 text-right font-bold text-xl text-white border-b border-white/10">Collateral</th>
+          <th class="p-2 sm:p-4 text-left font-bold text-xs sm:text-sm text-white border-b border-white/10">Debt</th>
+          <th class="p-2 sm:p-4 text-right font-bold text-xs sm:text-sm text-white border-b border-white/10">Collateral</th>
         </tr>
       </thead>
       <tbody>
@@ -17,12 +17,12 @@
           :key="trove.owner" 
           class="group hover:bg-white/10 transition-all border-b border-white/5"
         >
-          <td class="p-6 font-mono text-lg text-gray-400 group-hover:text-white">
-            {{ trove.owner.slice(0,10) }}...
+          <td class="p-2 sm:p-4 font-mono text-xs sm:text-sm text-gray-400 group-hover:text-white whitespace-nowrap">
+            {{ trove.owner.slice(0,6) }}...{{ trove.owner.slice(-4) }}
           </td>
-          <td class="p-6">
+          <td class="p-2 sm:p-4">
             <span :class="[
-              'px-6 py-3 rounded-2xl text-lg font-bold shadow-lg transition-all',
+              'px-2 py-1 rounded-lg text-xs sm:text-sm font-bold shadow-lg transition-all whitespace-nowrap',
               trove.icr < 110 
                 ? 'bg-red-500/20 text-red-300 animate-pulse' 
                 : trove.icr < 150 
@@ -32,10 +32,10 @@
               {{ trove.icr.toFixed(2) }}%
             </span>
           </td>
-          <td class="p-6 font-mono text-lg text-gray-300">
+          <td class="p-2 sm:p-4 font-mono text-xs sm:text-sm text-gray-300 whitespace-nowrap">
             {{ formatDebt(trove.debt) }} MUSD
           </td>
-          <td class="p-6 text-right font-mono text-lg text-gray-300">
+          <td class="p-2 sm:p-4 text-right font-mono text-xs sm:text-sm text-gray-300 whitespace-nowrap">
             ${{ formatCollateral(trove.collateral, btcPrice) }}
           </td>
         </tr>
