@@ -8,13 +8,14 @@
     />
 
     <!-- Open Trove Modal Component -->
-    <OpenTroveModal 
-      v-if="showModal" 
-      :address="address"
-      :btc-price="btcPrice"
-      @close="showModal = false" 
-      @success="troves.refetch()" 
-    />
+    <div v-if="showModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" @click.self="showModal = false">
+      <OpenTroveModal 
+        :address="address"
+        :btc-price="btcPrice"
+        @close="showModal = false" 
+        @success="troves.refetch()" 
+      />
+    </div>
 
     <!-- Main Content Area -->
     <main class="flex flex-col items-center justify-center p-4 mt-4 sm:mt-12 flex-grow">

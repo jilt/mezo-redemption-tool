@@ -256,6 +256,7 @@ body {
 .modal{
     top: 10%;
     left: 25%;
+    min-width: 50%;
     background-color: hsl(var(--background));
     color: hsl(var(--terminal));
     font-family: Courier Prime, VT323, monospace;
