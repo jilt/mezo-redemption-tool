@@ -79,7 +79,8 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { type Address, parseEther, formatEther } from 'viem'
-import { getWalletClient, publicClient, getNetworkContracts } from '../config/clients'
+import { publicClient, getNetworkContracts } from '../config/clients'
+import { useWallet } from '../composables/useWallet'
 import { borrowerOperationsAbi } from '../abis/BorrowerOperations'
 import { hintHelpersAbi } from '../abis/HintHelpers'
 import { sortedTrovesAbi } from '../abis/SortedTroves'
@@ -92,6 +93,7 @@ const props = defineProps<{
 
 const emit = defineEmits(['close', 'success'])
 
+const { walletClient: globalWalletClient } = useWallet()
 const openingTrove = ref(false)
 const newTroveCol = ref('0.025')
 const newTroveDebt = ref('2000')
@@ -121,7 +123,7 @@ async function openRiskyTrove() {
   openingTrove.value = true
   try {
     const networkContracts = await getNetworkContracts()
-    const walletClient = getWalletClient()
+    const walletClient = globalWalletClient.value!
     
     const chainId = await publicClient.getChainId()
     const isFork = chainId === 31337

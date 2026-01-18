@@ -13,6 +13,7 @@ const isConnecting = ref(false)
 
 // Store the active wallet client (marked raw to avoid Vue reactivity overhead on complex objects)
 const walletClient = ref<WalletClient | null>(null)
+let activeProvider: any = null
 
 // Store contract instances or addresses globally
 const contracts = reactive({
@@ -21,6 +22,47 @@ const contracts = reactive({
   priceFeed: null as Address | null,
   musdToken: null as Address | null,
 })
+
+// --- Global Actions (Singleton) ---
+
+const getBalance = async () => {
+  if (!account.value) return
+  try {
+    const bal = await publicClient.getBalance({ address: account.value })
+    balance.value = formatEther(bal)
+    return bal
+  } catch (error) {
+    console.error('Get balance failed:', error)
+  }
+}
+
+const disconnectGlobal = () => {
+  if (activeProvider) {
+    activeProvider.removeListener?.('accountsChanged', handleAccountsChanged)
+    activeProvider.removeListener?.('chainChanged', handleChainChanged)
+    activeProvider.removeListener?.('disconnect', handleDisconnect)
+    activeProvider.disconnect?.()
+  }
+  activeProvider = null
+  account.value = null
+  balance.value = null
+  walletClient.value = null
+}
+
+const handleAccountsChanged = (accounts: string[]) => {
+  if (accounts.length === 0) {
+    disconnectGlobal()
+  } else {
+    account.value = accounts[0] as Address
+    getBalance()
+  }
+}
+
+const handleChainChanged = (_chainId: string) => {
+  window.location.reload()
+}
+
+const handleDisconnect = () => disconnectGlobal()
 
 export function useWallet() {
   
@@ -43,7 +85,7 @@ export function useWallet() {
   /**
    * Connect to a specific wallet provider
    */
-  const connect = async (type: ConnectorType = CONNECTOR_TYPES.INJECTED) => {
+  const connect = async (type: ConnectorType = CONNECTOR_TYPES.WALLET_CONNECT) => {
     isConnecting.value = true
     errorMessage.value = null
     
@@ -51,21 +93,30 @@ export function useWallet() {
       const connector = connectors[type]
       if (!connector) throw new Error(`Connector ${type} not found`)
 
-      const { address, client } = await connector.connect()
+      const { address, client, provider } = await connector.connect()
       
       account.value = address as Address
       walletClient.value = markRaw(client)
+
+      // Cleanup old provider listeners if any
+      if (activeProvider) {
+        activeProvider.removeListener?.('accountsChanged', handleAccountsChanged)
+        activeProvider.removeListener?.('chainChanged', handleChainChanged)
+        activeProvider.removeListener?.('disconnect', handleDisconnect)
+      }
+
+      // Attach new listeners directly to the provider
+      activeProvider = provider
+      if (provider.on) {
+        provider.on('accountsChanged', handleAccountsChanged)
+        provider.on('chainChanged', handleChainChanged)
+        provider.on('disconnect', handleDisconnect)
+      }
       
       // Setup chain data
       chainId.value = await publicClient.getChainId()
       await setContracts()
       await getBalance()
-
-      // Setup listeners for injected provider
-      if (type === CONNECTOR_TYPES.INJECTED && window.ethereum) {
-        window.ethereum.on('accountsChanged', handleAccountsChanged)
-        window.ethereum.on('chainChanged', handleChainChanged)
-      }
 
     } catch (error: any) {
       console.error('Connection failed:', error)
@@ -73,40 +124,6 @@ export function useWallet() {
     } finally {
       isConnecting.value = false
     }
-  }
-
-  const disconnect = () => {
-    account.value = null
-    balance.value = null
-    walletClient.value = null
-    if (window.ethereum) {
-      window.ethereum.removeAllListeners('accountsChanged')
-      window.ethereum.removeAllListeners('chainChanged')
-    }
-  }
-
-  const getBalance = async () => {
-    if (!account.value) return
-    try {
-      const bal = await publicClient.getBalance({ address: account.value })
-      balance.value = formatEther(bal)
-      return bal
-    } catch (error) {
-      console.error('Get balance failed:', error)
-    }
-  }
-
-  // Event Handlers
-  const handleAccountsChanged = (accounts: string[]) => {
-    if (accounts.length === 0) disconnect()
-    else {
-      account.value = accounts[0] as Address
-      getBalance()
-    }
-  }
-
-  const handleChainChanged = (_chainId: string) => {
-    window.location.reload()
   }
 
   return {
@@ -121,7 +138,7 @@ export function useWallet() {
     
     // Actions
     connect,
-    disconnect,
+    disconnect: disconnectGlobal,
     getBalance,
     
     // Expose client for advanced usage (like writeContract)

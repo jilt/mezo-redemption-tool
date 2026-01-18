@@ -10,7 +10,7 @@ export type ConnectorType = typeof CONNECTOR_TYPES[keyof typeof CONNECTOR_TYPES]
 
 export interface WalletConnector {
   type: ConnectorType
-  connect: () => Promise<{ address: string; client: WalletClient }>
+  connect: () => Promise<{ address: string; client: WalletClient; provider: any }>
 }
 
 // Coinbase Connector (Example stub - requires SDK)
@@ -33,7 +33,7 @@ export const CoinbaseConnector: WalletConnector = {
     const [address] = await client.requestAddresses()
     if (!address) throw new Error('User rejected connection')
 
-    return { address, client }
+    return { address, client, provider }
   }
 }
 
@@ -65,7 +65,7 @@ export const WalletConnectConnector: WalletConnector = {
     const [address] = await client.requestAddresses()
     if (!address) throw new Error('User rejected connection')
 
-    return { address, client }
+    return { address, client, provider }
   }
 }
 

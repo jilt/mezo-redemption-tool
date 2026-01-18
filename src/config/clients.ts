@@ -1,4 +1,4 @@
-import { createPublicClient, http, createWalletClient, custom } from 'viem'
+import { createPublicClient, http } from 'viem'
 import { MEZO_TESTNET, MEZO_MAINNET, MEZO_LOCAL, getContracts } from './mezo'
 
 // Safe environment access for Node.js scripts (Hardhat)
@@ -22,16 +22,6 @@ export const publicClient = createPublicClient({
   chain: getChain(),
   transport: http()
 })
-
-export function getWalletClient() {
-  if (typeof window === 'undefined') throw new Error('Browser only')
-  if (!window.ethereum) throw new Error('No wallet detected')
-  
-  return createWalletClient({
-    chain: getChain(),
-    transport: custom(window.ethereum)
-  })
-}
 
 // ✅ EXPOSE NETWORK-CONTRACTS
 export const getNetworkContracts = async () => {

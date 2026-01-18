@@ -185,7 +185,9 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import { useTroves } from '../composables/useTroves'
-import { getWalletClient, publicClient, getNetworkContracts } from '../config/clients'
+import { useWallet } from '../composables/useWallet'
+import { publicClient, getNetworkContracts } from '../config/clients'
+import { CONNECTOR_TYPES } from '../config/connectors'
 import { type Address, parseEther } from 'viem'
 import type { TroveInfo } from '../abis/TroveManager'
 import { priceFeedAbi } from '../abis/PriceFeed'
@@ -233,9 +235,8 @@ const musdTokenAbi = [
 ] as const
 
 const { troves, liveTroves } = useTroves()
-const walletConnected = ref(false)
-const address = ref<Address | null>(null)
-const connecting = ref(false)
+const { account: address, isConnected: walletConnected, isConnecting: connecting, connect, disconnect, walletClient: globalWalletClient } = useWallet()
+
 const redeeming = ref(false)
 const btcPrice = ref(0)
 const isFallbackPrice = ref(false)
@@ -304,60 +305,12 @@ async function getContracts() {
 // Wallet connection
 async function toggleWallet() {
   if (walletConnected.value) {
-    window.ethereum?.removeAllListeners()
-    walletConnected.value = false
-    address.value = null
+    disconnect()
     return
   }
-
-  connecting.value = true
-  try {
-    const accounts = await (window.ethereum as any)?.request({ 
-      method: 'eth_requestAccounts' 
-    }) as string[]
-    
-    if (!accounts?.length) throw new Error('No accounts returned')
-    
-    address.value = accounts[0] as Address
-    walletConnected.value = true
-
-    const chainIdHex = `0x${publicClient.chain!.id.toString(16)}`
-    console.log('🔗 Switching to chain:', chainIdHex)
-    
-    try {
-      await (window.ethereum as any).request({
-        method: 'wallet_switchEthereumChain',
-        params: [{ chainId: chainIdHex }]
-      })
-    } catch (switchError: any) {
-      if (switchError.code === 4902) {
-        const chainConfig = getChainConfig(chainIdHex)
-        if (chainConfig) {
-          await (window.ethereum as any).request({
-            method: 'wallet_addEthereumChain',
-            params: [chainConfig]
-          })
-        }
-      } else {
-        throw switchError
-      }
-    }
-
-    window.ethereum?.on('accountsChanged', (accounts: string[]) => {
-      if (!accounts.length) {
-        walletConnected.value = false
-        address.value = null
-      } else {
-        address.value = accounts[0] as Address
-      }
-    })
-
-  } catch (error) {
-    console.error('Wallet connection failed:', error)
-    alert(`Connection failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
-  } finally {
-    connecting.value = false
-  }
+  
+  // Default to WalletConnect as requested
+  await connect(CONNECTOR_TYPES.WALLET_CONNECT)
 }
 
 function getChainConfig(chainIdHex: string) {
@@ -408,16 +361,20 @@ async function closeTrove() {
   
   try {
     const networkContracts = await getContracts()
-    const walletClient = getWalletClient()
+    const walletClient = globalWalletClient.value!
 
     console.log('🔒 Closing trove via BorrowerOperations')
 
-    const hash = await walletClient.writeContract({
+    const txOptions: any = {
       address: networkContracts.BORROWER_OPERATIONS,
       abi: borrowerOperationsAbi,
       functionName: 'closeTrove',
       account: address.value
-    }) as `0x${string}`
+    }
+
+    if (chainId.value === 31337) txOptions.gas = 3000000n
+
+    const hash = await walletClient.writeContract(txOptions) as `0x${string}`
 
     console.log('⏳ Waiting for transaction:', hash)
     const receipt = await publicClient.waitForTransactionReceipt({ hash })
@@ -511,16 +468,20 @@ async function addCollateral() {
     console.log('📍 Hints:', { upperHint, lowerHint })
 
     // Add collateral via BorrowerOperations.addColl()
-    const walletClient = getWalletClient()
+    const walletClient = globalWalletClient.value!
 
-    const hash = await walletClient.writeContract({
+    const txOptions: any = {
       address: networkContracts.BORROWER_OPERATIONS,
       abi: borrowerOperationsAbi,
       functionName: 'addColl',
       account: address.value,
       args: [upperHint, lowerHint],
       value: collateralAmount
-    }) as `0x${string}`
+    }
+
+    if (chainId.value === 31337) txOptions.gas = 3000000n
+
+    const hash = await walletClient.writeContract(txOptions) as `0x${string}`
 
     console.log('⏳ Waiting for transaction:', hash)
     const receipt = await publicClient.waitForTransactionReceipt({ hash })
@@ -604,15 +565,18 @@ async function redeemAmount(amountMUSD: string) {
 
     if (currentAllowance < redemptionAmount) {
       console.log('⏳ Approving MUSD...')
-      const walletClient = getWalletClient()
+      const walletClient = globalWalletClient.value!
       
-      const approveHash = await walletClient.writeContract({
+      const txOptions: any = {
         address: networkContracts.MUSD_TOKEN,
         abi: musdTokenAbi,
         functionName: 'approve',
         account: address.value,
         args: [networkContracts.TROVE_MANAGER, redemptionAmount]
-      }) as `0x${string}`
+      }
+      if (chainId.value === 31337) txOptions.gas = 100000n
+
+      const approveHash = await walletClient.writeContract(txOptions) as `0x${string}`
 
       await publicClient.waitForTransactionReceipt({ hash: approveHash })
       console.log('✅ MUSD approved')
@@ -671,7 +635,7 @@ async function redeemAmount(amountMUSD: string) {
 
     // Step 7: Execute redemption IMMEDIATELY after calculating hints
     console.log('📤 Executing redeemCollateral() - mainnet pattern')
-    const walletClient = getWalletClient()
+    const walletClient = globalWalletClient.value!
     
     const txOptions: any = {
       address: networkContracts.TROVE_MANAGER,
@@ -752,18 +716,22 @@ async function liquidateTroves() {
   liquidating.value = true
   try {
     const networkContracts = await getContracts()
-    const walletClient = getWalletClient()
+    const walletClient = globalWalletClient.value!
     
     const troveOwners = liquidatable.map((t: TroveInfo) => t.owner)
     console.log('🔥 Liquidating troves:', troveOwners)
 
-    const hash = await walletClient.writeContract({
+    const txOptions: any = {
       address: networkContracts.TROVE_MANAGER,
       abi: troveManagerAbi,
       functionName: 'batchLiquidateTroves',
       account: address.value,
       args: [troveOwners]
-    }) as `0x${string}`
+    }
+
+    if (chainId.value === 31337) txOptions.gas = 5000000n
+
+    const hash = await walletClient.writeContract(txOptions) as `0x${string}`
 
     console.log('⏳ Liquidation tx submitted:', hash)
     await publicClient.waitForTransactionReceipt({ hash })
@@ -791,10 +759,6 @@ onMounted(async () => {
   
   await getContracts()
 
-  if ((window.ethereum as any)?.selectedAddress) {
-    await toggleWallet()
-  }
-  
   try {
     const networkContracts = await getContracts()
     
